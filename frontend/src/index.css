@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #003b9a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0050cb;
+  --color-on-primary-container: #c1cfff;
+  
+  --color-secondary: #4e625f;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d0e7e2;
+  --color-on-secondary-container: #546865;
+  
+  --color-tertiary: #004d24;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #006833;
+  --color-on-tertiary-container: #5aec8c;
+  
+  --color-background: #f7f9fb;
+  --color-on-background: #191c1e;
+  --color-surface: #f7f9fb;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #434654;
+  --color-surface-container: #eceef0;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  
+  --color-outline: #737685;
+  --color-outline-variant: #c3c6d6;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  
+  --font-body: "Manrope", sans-serif;
+  --font-display: "Manrope", sans-serif;
+  
+  --radius-2xl: 1.5rem;
+  
+  --spacing-stack-lg: 32px;
+  --spacing-margin-desktop: 40px;
+  --spacing-container-max: 1280px;
+  --spacing-gutter: 24px;
+}
+
+@layer base {
+  * {
+    @apply border-outline-variant;
+  }
+  body {
+    @apply bg-background text-on-background font-body;
+  }
+}
+
+@layer components {
+  .container-max {
+    @apply max-w-(--spacing-container-max) mx-auto px-(--spacing-gutter);
+  }
+  
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-[0_4px_30px_rgba(0,80,203,0.08)];
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white px-8 py-4 rounded-2xl font-semibold shadow-lg shadow-primary/20 hover:translate-y-[-2px] transition-all active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-white/50 backdrop-blur-md border border-outline-variant text-primary px-8 py-4 rounded-2xl font-semibold hover:bg-white transition-all active:scale-95;
+  }
+
+  .floating-icon {
+    @apply animate-[float_6s_ease-in-out_infinite];
+  }
+
+  .text-display-lg {
+    @apply text-5xl font-extrabold tracking-tight;
+  }
+
+  .text-headline-lg {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  /* Ensure Material Symbols are rendered correctly */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.section-padding {
+  @apply py-24;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  grid-auto-rows: 200px;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-cover: cover;
+  transition: transform 0.5s ease;
+}
+
+.gallery-item:hover img {
+  transform: scale(1.05);
+}
+
+.gallery-item .overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 59, 154, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .overlay {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .section-padding {
+    @apply py-16;
+  }
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
