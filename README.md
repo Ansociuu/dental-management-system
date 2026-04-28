@@ -1,93 +1,102 @@
-# 🦷 Mec Dental Management System
+# 🦷 Hệ Thống Quản Lý Nha Khoa Mec (Mec Dental Management System)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/Frontend-React%2019-blue?logo=react)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20v4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?logo=node.js)](https://nodejs.org/)
 
-A premium, full-stack Dental Clinic Management System designed with the **"Medical Sanctuary"** philosophy. This project focuses on providing a professional landing page for patients and a robust management system for clinic operations.
+Hệ thống quản lý nha khoa toàn diện với giao diện Landing Page cao cấp, được thiết kế theo triết lý **"Medical Sanctuary"** (Thánh đường Y khoa). Dự án không chỉ tập trung vào trải nghiệm người dùng mà còn được xây dựng làm nền tảng cho việc nghiên cứu **Kiểm thử Phần mềm và Đảm bảo Chất lượng (QA)**.
 
-## ✨ Key Features
+---
 
-### 🌐 Premium Landing Page
-- **Hero Section:** Engaging introduction with glassmorphism effects and floating 3D icons.
-- **Service Showcase:** Interactive grid displaying core dental services (Implant, Orthodontics, etc.).
-- **Doctor Profiles:** Professional cards showcasing the clinic's dedicated experts.
-- **Gallery:** High-fidelity space showcase using a responsive bento-grid layout.
-- **Appointment Form:** Seamless user experience for booking consultations with instant visual feedback.
+## ✨ Các Tính Năng Chính
 
-### ⚙️ Management System (QA Focused)
-- **Patient Management:** Track records and treatment history.
-- **Scheduling:** Real-time appointment management.
-- **Authentication:** Secure access using JWT and bcrypt.
-- **Testing Suite:** Developed specifically for Software Testing and Quality Assurance evaluation.
+### 1. Landing Page Cao Cấp (Trải nghiệm Bệnh nhân)
+- **Giao diện Hero:** Ấn tượng với hiệu ứng kính mờ (Glassmorphism), icon 3D bay bổng và tiêu đề thu hút.
+- **Dịch vụ Chuyên sâu:** Trình bày danh mục dịch vụ (Implant, Chỉnh nha, Răng sứ...) dưới dạng lưới tương tác.
+- **Đội ngũ Bác sĩ:** Thẻ thông tin bác sĩ chuyên nghiệp, hiển thị chuyên môn và vai trò rõ ràng.
+- **Không gian Phòng khám:** Thư viện ảnh (Gallery) phong cách Bento-grid hiện đại, giới thiệu cơ sở vật chất chuẩn 5 sao.
+- **Đặt lịch hẹn thông minh:** Form đăng ký tư vấn tối ưu hóa trải nghiệm, hỗ trợ bệnh nhân đặt lịch nhanh chóng.
 
-## 🎨 Design Philosophy: "Medical Sanctuary"
-Built with **Tailwind CSS v4**, the UI follows a "Medical Sanctuary" theme:
-- **Tonal Layering:** Deep blues (`#003b9a`) for authority combined with soft surfaces for comfort.
-- **Glassmorphism:** High-end backdrop blurs and subtle white borders.
-- **Modern Typography:** Clean and readable **Manrope** font throughout the application.
+### 2. Hệ Thống Quản Lý (Nghiệp vụ Nha khoa)
+- **Quản lý Bệnh nhân:** Lưu trữ hồ sơ, lịch sử điều trị và thông tin liên lạc.
+- **Quản lý Lịch hẹn:** Sắp xếp và theo dõi trạng thái lịch khám thời gian thực.
+- **Xác thực Bảo mật:** Hệ thống đăng nhập an toàn sử dụng JWT (JSON Web Token) và mã hóa mật khẩu Bcrypt.
+- **Tối ưu QA:** Cấu trúc mã nguồn rõ ràng, dễ dàng triển khai các kịch bản kiểm thử (Unit Test, Integration Test).
 
-## 🛠️ Tech Stack
+---
 
-| Component | Technology |
+## 🎨 Triết Lý Thiết Kế: "Medical Sanctuary"
+Ứng dụng sử dụng **Tailwind CSS v4** với hệ thống Design Tokens tùy chỉnh:
+- **Màu sắc:** Sự kết hợp giữa sắc xanh Primary chuyên sâu (`#003b9a`) tạo sự tin tưởng và các tone màu nền sáng mịn tạo cảm giác an tâm.
+- **Hiệu ứng:** Sử dụng tối đa Backdrop Blur (làm mờ nền) và Shadow (đổ bóng) đa lớp để tạo chiều sâu.
+- **Typography:** Phông chữ **Manrope** hiện đại, mang lại cảm giác sạch sẽ và chuyên nghiệp.
+
+---
+
+## 🛠️ Công Nghệ Sử Dụng
+
+| Thành phần | Công nghệ |
 | :--- | :--- |
 | **Frontend** | React 19, Vite, Tailwind CSS v4, Material Symbols |
-| **Backend** | Node.js, Express |
-| **Database** | MySQL (with support for Sequelize/JSON) |
-| **Auth** | JSON Web Tokens (JWT), Bcrypt.js |
+| **Backend** | Node.js, Express.js |
+| **Bảo mật** | JWT, Bcrypt.js, CORS |
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
-- Node.js (v18+)
-- npm or yarn
-- MySQL Server
+## 🚀 Hướng Dẫn Cài Đặt
 
-### 1. Backend Configuration
+### Yêu cầu hệ thống
+- Node.js (Phiên bản 18 trở lên)
+- Trình duyệt hiện đại (Chrome, Edge, Brave...)
+
+### 1. Thiết lập Backend (Máy chủ)
 ```bash
 cd backend
 npm install
 ```
-Create a `.env` file in the `backend` folder:
+Tạo tệp `.env` trong thư mục `backend` và cấu hình:
 ```env
 PORT=5000
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=dental_db
-JWT_SECRET=your_super_secret_key
+JWT_SECRET=your_secret_key
 ```
-Start the server:
+Chạy máy chủ:
 ```bash
 npm run dev
 ```
 
-### 2. Frontend Configuration
+### 2. Thiết lập Frontend (Giao diện)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-## 📂 Project Structure
-```text
-.
-├── backend/            # Express.js API
-│   ├── src/            # Backend logic
-│   └── package.json
-├── frontend/           # React + Vite application
-│   ├── src/
-│   │   ├── assets/     # High-res image assets
-│   │   ├── components/ # Modular UI components
-│   │   └── index.css   # Custom Tailwind v4 tokens
-│   └── package.json
-└── README.md
-```
-
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Truy cập ứng dụng tại: `http://localhost:5173`
 
 ---
-*Built with ❤️ for Excellence in Dental Care.*
+
+## 📂 Cấu Trúc Thư Mục
+```text
+.
+├── backend/            # Mã nguồn phía máy chủ (API)
+│   ├── src/            # Logic nghiệp vụ, Models, Routes
+│   └── package.json    # Thư viện và Scripts
+├── frontend/           # Mã nguồn giao diện người dùng
+│   ├── src/
+│   │   ├── assets/     # Tài nguyên hình ảnh, biểu tượng
+│   │   ├── components/ # Các thành phần UI tái sử dụng
+│   │   └── index.css   # Cấu hình Tailwind v4 & Design Tokens
+│   └── package.json
+└── README.md           # Tài liệu hướng dẫn dự án
+```
+
+---
+
+## 📄 Bản quyền
+Dự án được phát hành dưới giấy phép MIT. Xem tệp [LICENSE](LICENSE) để biết thêm chi tiết.
+
+---
+*Phát triển bởi ❤️ dành cho sự hoàn mỹ của nụ cười.*
