@@ -13,7 +13,7 @@ const Navbar = () => {
 
   return (
     <nav className={`fixed top-0 left-0 w-full z-[1000] transition-all duration-300 ${
-      scrolled ? 'glass-card py-3 shadow-md' : 'bg-transparent py-5'
+      scrolled ? 'bg-white/95 backdrop-blur-md py-3 shadow-md border-b border-gray-100' : 'bg-white py-5 border-b border-transparent'
     }`}>
       <div className="container-max flex items-center justify-between">
         <div className="logo flex items-center gap-2">

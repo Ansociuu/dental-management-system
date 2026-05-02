@@ -42,7 +42,7 @@ const Footer = () => {
             <ul className="space-y-6">
               <li className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-primary">location_on</span>
-                <p className="text-on-surface-variant text-sm">123 Đường ABC, Quận 1, TP. Hồ Chí Minh</p>
+                <p className="text-on-surface-variant text-sm">Phenikaa</p>
               </li>
               <li className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-primary">call</span>
@@ -58,7 +58,7 @@ const Footer = () => {
 
         <div className="pt-8 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-xs font-semibold text-on-surface-variant opacity-60">
-            © 2024 Nha khoa Mec. Bảo tồn nụ cười Việt.
+            © 2026 Nha khoa Mec. Bảo tồn nụ cười Việt.
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-xs font-semibold text-on-surface-variant hover:text-primary underline opacity-60">Chính sách bảo mật</a>
