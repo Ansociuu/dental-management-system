@@ -1,8 +1,4 @@
 import React from 'react';
-import bs1 from '../assets/landingpage/bs1.png';
-import bs2 from '../assets/landingpage/bs2.png';
-import bs3 from '../assets/landingpage/bs3.png';
-import bs4 from '../assets/landingpage/bs4.png';
 
 const doctors = [
   {
@@ -10,28 +6,28 @@ const doctors = [
     name: 'BS. Nguyễn Tiến Doanh',
     role: 'Giám đốc chuyên môn',
     specialty: 'Chuyên gia Chỉnh nha & Niềng răng',
-    img: bs1
+    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394134088.png'
   },
   {
     id: 2,
     name: 'BS. Nguyễn Văn An',
     role: 'Bác sĩ chuyên khoa II',
     specialty: 'Chuyên gia Răng sứ thẩm mỹ',
-    img: bs2
+    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394150669.png'
   },
   {
     id: 3,
     name: 'BS. Phạm Thị Minh Ngọc',
     role: 'Tiến sĩ Nha khoa',
     specialty: 'Chuyên gia Implant',
-    img: bs3
+    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394143772.png'
   },
   {
     id: 4,
     name: 'BS. Từ Hữu Minh Vũ',
     role: 'Thạc sĩ Y khoa',
     specialty: 'Chuyên gia Nha khoa Tổng quát',
-    img: bs4
+    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394157221.png'
   }
 ];
 
@@ -53,9 +49,9 @@ const Team = () => {
           {doctors.map((doctor) => (
             <div key={doctor.id} className="group cursor-pointer">
               <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-6 shadow-md">
-                <img 
-                  src={doctor.img} 
-                  alt={doctor.name} 
+                <img
+                  src={doctor.img}
+                  alt={doctor.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">

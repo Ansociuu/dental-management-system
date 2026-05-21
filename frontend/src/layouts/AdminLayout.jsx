@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [openMenu, setOpenMenu] = useState(
     location.pathname.includes('/admin/users') || 
     location.pathname.includes('/admin/staff') || 
     location.pathname.includes('/admin/customers') ||
+    location.pathname.includes('/admin/patients-temp') ||
     location.pathname.includes('/admin/doctor-profile') ? 'Người dùng' : 
-    location.pathname.includes('/admin/reports') ? 'Báo cáo' : ''
+    location.pathname.includes('/admin/appointments/') ? 'Lịch hẹn' :
+    location.pathname.includes('/admin/reports') ? 'Báo cáo' : 
+    location.pathname.includes('/admin/settings') || 
+    location.pathname.includes('/admin/shifts') || 
+    location.pathname.includes('/admin/holidays') ? 'Cấu hình' : ''
   );
 
   const menuItems = [
     { icon: 'dashboard', label: 'Tổng quan', path: '/admin/dashboard' },
-    { icon: 'calendar_month', label: 'Lịch hẹn', path: '/admin/appointments' },
+    { 
+      icon: 'calendar_month', 
+      label: 'Lịch hẹn', 
+      path: '#',
+      isExpandable: true,
+      subItems: [
+        { label: 'Danh sách lịch hẹn', path: '/admin/appointments' },
+        { label: 'Đặt lịch mới', path: '/admin/appointments/book' },
+        { label: 'Theo dõi & Điều phối', path: '/admin/appointments/monitor' },
+        { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules' }
+      ]
+    },
     { icon: 'person', label: 'Hồ sơ bệnh án', path: '/admin/records' },
     { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services' },
     { 
@@ -23,7 +41,8 @@ const AdminLayout = () => {
       isExpandable: true,
       subItems: [
         { label: 'Nhân viên', path: '/admin/users' },
-        { label: 'Khách hàng', path: '/admin/customers' }
+        { label: 'Khách hàng', path: '/admin/customers' },
+        { label: 'Bệnh nhân tạm thời', path: '/admin/patients-temp' }
       ]
     },
     { icon: 'security', label: 'Phân quyền', path: '/admin/roles' },
@@ -38,8 +57,25 @@ const AdminLayout = () => {
         { label: 'Bệnh nhân & Dịch vụ', path: '/admin/reports/patients-services' }
       ]
     },
-    { icon: 'settings', label: 'Cấu hình', path: '/admin/settings' },
+    { 
+      icon: 'settings', 
+      label: 'Cấu hình', 
+      path: '#',
+      isExpandable: true,
+      subItems: [
+        { label: 'Cấu hình chung', path: '/admin/settings' },
+        { label: 'Ca làm việc', path: '/admin/shifts' },
+        { label: 'Ngày nghỉ lễ', path: '/admin/holidays' }
+      ]
+    },
   ];
+
+  const roleMap = {
+    'ADMIN': 'Quản trị',
+    'DOCTOR': 'Bác sĩ',
+    'NURSE': 'Y tá',
+    'RECEPTIONIST': 'Lễ tân'
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 font-body">
@@ -56,12 +92,25 @@ const AdminLayout = () => {
           </div>
         </div>
 
+        {/* User Card */}
+        {user && (
+          <div className="mx-6 mb-6 p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
+              {user.fullName.split(' ').pop().substring(0, 2).toUpperCase()}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-slate-900 truncate">{user.fullName}</p>
+              <p className="text-[11px] font-bold text-blue-600 mt-0.5">{roleMap[user.role] || user.role}</p>
+            </div>
+          </div>
+        )}
+
         {/* Action Button */}
-        <div className="px-6 pb-8">
-          <button className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
+        <div className="px-6 pb-6">
+          <Link to="/admin/appointments/book" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
             <span className="material-symbols-outlined text-[20px]">add</span>
             Hẹn lịch mới
-          </button>
+          </Link>
         </div>
 
         {/* Navigation */}
@@ -93,7 +142,7 @@ const AdminLayout = () => {
                       </span>
                     </button>
                     
-                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === item.label ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === item.label ? 'max-h-60 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
                       <ul className="pl-12 pr-4 space-y-1 py-1">
                         {item.subItems.map((subItem, subIndex) => (
                           <li key={subIndex}>
@@ -143,10 +192,13 @@ const AdminLayout = () => {
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 hover:shadow-sm transition-all group">
+              <button 
+                onClick={logout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 hover:shadow-sm transition-all group text-left"
+              >
                 <span className="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">logout</span>
                 Đăng xuất
-              </a>
+              </button>
             </li>
           </ul>
         </div>

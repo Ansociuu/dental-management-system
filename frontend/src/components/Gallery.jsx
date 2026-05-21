@@ -2,22 +2,23 @@ import React from 'react';
 import herosecs from '../assets/landingpage/herosecs.png';
 import khonggian1 from '../assets/landingpage/khonggian1.png';
 
+
 const images = [
   {
     id: 1,
     url: herosecs,
-    span: 'md:col-span-2 md:row-span-2'
+    span: 'col-span-2 row-span-2'
   },
   {
     id: 2,
     url: khonggian1,
-    span: 'md:col-span-2 md:row-span-2'
+    span: 'col-span-2 row-span-2'
   }
 ];
 
 const Gallery = () => {
   return (
-    <section id="gallery" className="section-padding" style={{ backgroundColor: 'var(--surface-container-low)' }}>
+    <section className="section-padding" style={{ backgroundColor: 'var(--surface-container-low)' }}>
       <div className="container-max">
         <div className="text-center mb-16">
           <h2 className="text-display-lg">Không gian chuẩn 5 sao</h2>
@@ -27,8 +28,10 @@ const Gallery = () => {
         <div className="gallery-grid">
           {images.map((img) => (
             <div key={img.id} className={`gallery-item ${img.span}`}>
-              <img src={img.url} alt={`Mec Gallery ${img.id}`} />
-              <div className="overlay"></div>
+              <div>
+                <img src={img.url} alt={`Mec Gallery ${img.id}`} className="w-full h-full object-cover" />
+                <div className="overlay"></div>
+              </div>
             </div>
           ))}
         </div>

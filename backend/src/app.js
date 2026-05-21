@@ -1,24 +1,50 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const connectDB = require("./config/db");
+const errorHandler = require("./middlewares/errorHandler");
+
+// Import routes
+const holidayRoutes = require("./routes/holidayRoutes");
+const shiftRoutes = require("./routes/shiftRoutes");
+const dutyRoutes = require("./routes/dutyRoutes");
+const patientRoutes = require("./routes/patientRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
+const userRoutes = require("./routes/userRoutes");
+const serviceRoutes = require("./routes/serviceRoutes");
+const authRoutes = require("./routes/authRoutes");
+
 
 const app = express();
 
-// middleware
+// Kết nối MongoDB Atlas
+connectDB();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// test route
+// Test route
 app.get("/", (req, res) => {
-    res.send("API is running...");
+    res.json({ success: true, message: "🦷 Mec Dental API is running..." });
 });
 
-// routes
-const exampleRoutes = require("./routes/exampleRoutes");
-app.use("/api/example", exampleRoutes);
+// API Routes - Nhóm chức năng 2: Quản lý lịch khám
+app.use("/api/v1/holidays", holidayRoutes);
+app.use("/api/v1/shifts", shiftRoutes);
+app.use("/api/v1/duty-schedules", dutyRoutes);
+app.use("/api/v1/patients", patientRoutes);
+app.use("/api/v1/appointments", appointmentRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/services", serviceRoutes);
+app.use("/api/v1/auth", authRoutes);
+
+
+// Middleware xử lý lỗi tập trung (phải đặt sau tất cả routes)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
