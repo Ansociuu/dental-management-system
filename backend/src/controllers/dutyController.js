@@ -1,6 +1,22 @@
 const DutySchedule = require('../models/DutySchedule');
 const Holiday = require('../models/Holiday');
 
+// Helper to construct a robust 24-hour date range ignoring timezone shifts
+const getDayRange = (dateInput) => {
+  const parsed = new Date(dateInput);
+  
+  const utcStart = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 0, 0, 0, 0));
+  const utcEnd = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 23, 59, 59, 999));
+  
+  const localStart = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0);
+  const localEnd = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999);
+
+  const gte = new Date(Math.min(utcStart.getTime(), localStart.getTime()));
+  const lte = new Date(Math.max(utcEnd.getTime(), localEnd.getTime()));
+  
+  return { $gte: gte, $lte: lte };
+};
+
 /**
  * @desc    Đăng ký lịch trực mới cho bác sĩ
  * @route   POST /api/v1/duty-schedules
@@ -23,8 +39,13 @@ const createDutySchedule = async (req, res, next) => {
       throw error;
     }
 
-    // Ràng buộc: Không trùng lịch trực (đã xử lý bởi unique index, nhưng check thủ công cho message rõ ràng)
-    const existing = await DutySchedule.findOne({ doctorId, date: dutyDate, shiftId, status: 'ACTIVE' });
+    // Ràng buộc: Không trùng lịch trực
+    const existing = await DutySchedule.findOne({
+      doctorId,
+      date: getDayRange(dutyDate),
+      shiftId,
+      status: 'ACTIVE'
+    });
     if (existing) {
       const error = new Error('Bác sĩ đã có lịch trực trong ca này vào ngày đã chọn');
       error.statusCode = 400;
@@ -51,7 +72,7 @@ const getDutySchedules = async (req, res, next) => {
     if (req.query.startDate && req.query.endDate) {
       filter.date = { $gte: new Date(req.query.startDate), $lte: new Date(req.query.endDate) };
     } else if (req.query.date) {
-      filter.date = new Date(req.query.date);
+      filter.date = getDayRange(req.query.date);
     }
 
     const duties = await DutySchedule.find(filter)

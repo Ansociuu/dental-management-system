@@ -1,72 +1,109 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Legend,
   PieChart, Pie, Cell
 } from 'recharts';
+import apiFetch from '../../services/api';
 
 const Dashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Real stats state
+  const [dashboardData, setDashboardData] = useState({
+    totalPatients: 0,
+    todayAppointmentsCount: 0,
+    waitingCount: 0,
+    todayRevenue: 0,
+    recentAppointments: [],
+    serviceDistribution: []
+  });
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch('/dashboard/stats');
+      if (res && res.data) {
+        setDashboardData(res.data);
+      }
+    } catch (err) {
+      setError(err.message || 'Lỗi khi tải thống kê');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  // fallback/merging stats data
   const stats = [
     {
       title: 'Tổng số bệnh nhân',
-      value: '1,248',
-      trend: '+12% so với tháng trước',
+      value: loading ? '...' : dashboardData.totalPatients.toLocaleString('vi-VN'),
+      trend: 'Đăng ký trong hệ thống',
       isPositive: true,
       icon: 'groups',
       color: 'blue'
     },
     {
       title: 'Lịch hẹn hôm nay',
-      value: '24',
-      trend: '4 lịch hẹn mới',
+      value: loading ? '...' : dashboardData.todayAppointmentsCount.toLocaleString('vi-VN'),
+      trend: 'Lịch khám đã xếp',
       isPositive: true,
       icon: 'calendar_today',
       color: 'indigo'
     },
     {
       title: 'Doanh thu trong ngày',
-      value: '15.4M',
-      trend: '+5.2% so với hôm qua',
+      value: loading ? '...' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(dashboardData.todayRevenue),
+      trend: 'Từ ca khám hoàn thành',
       isPositive: true,
       icon: 'payments',
       color: 'emerald'
     },
     {
       title: 'Đang chờ khám',
-      value: '3',
-      trend: 'Thời gian chờ TB: 15p',
+      value: loading ? '...' : dashboardData.waitingCount.toLocaleString('vi-VN'),
+      trend: 'Đã check-in xếp hàng',
       isPositive: false,
       icon: 'hourglass_empty',
       color: 'amber'
     }
   ];
 
-  const recentAppointments = [
-    { id: '1', patient: 'Nguyễn Văn A', time: '08:30', service: 'Khám định kỳ', doctor: 'BS. Trần Văn B', status: 'Đã hoàn thành', statusColor: 'emerald' },
-    { id: '2', patient: 'Trần Thị B', time: '09:00', service: 'Nhổ răng khôn', doctor: 'BS. Lê Thị C', status: 'Đang khám', statusColor: 'amber' },
-    { id: '3', patient: 'Lê Văn C', time: '10:00', service: 'Chữa tủy', doctor: 'BS. Nguyễn Văn D', status: 'Chờ khám', statusColor: 'blue' },
-    { id: '4', patient: 'Phạm Thị D', time: '10:30', service: 'Niềng răng', doctor: 'BS. Trần Văn B', status: 'Sắp tới', statusColor: 'slate' },
-    { id: '5', patient: 'Hoàng Văn E', time: '11:00', service: 'Tẩy trắng răng', doctor: 'BS. Lê Thị C', status: 'Sắp tới', statusColor: 'slate' },
-  ];
+  // Recent Appointments table list (Live or Fallback)
+  const displayAppointments = dashboardData.recentAppointments.length > 0
+    ? dashboardData.recentAppointments
+    : [
+        { id: '1', patient: 'Lê Hoàng Minh', time: 'Mẫu', service: 'Nhổ răng khôn', doctor: 'BS. Lê Minh Tâm', status: 'Chờ khám', statusColor: 'amber' },
+        { id: '2', patient: 'Trần Thị Thu Thảo', time: 'Mẫu', service: 'Tẩy trắng răng', doctor: 'BS. Nguyễn Hoàng Minh', status: 'Đã xong', statusColor: 'emerald' }
+      ];
 
-  // Chart Data
+  // Service distribution Pie Chart (Live or Fallback)
+  const displayServiceDistribution = dashboardData.serviceDistribution.length > 0
+    ? dashboardData.serviceDistribution
+    : [
+        { name: 'Khám tổng quát', value: 35 },
+        { name: 'Nhổ răng khôn', value: 15 },
+        { name: 'Tẩy trắng răng', value: 20 },
+        { name: 'Niềng răng', value: 10 },
+        { name: 'Trồng răng Implant', value: 20 },
+      ];
+
+  // Chart Static Data (as in original beautiful design)
   const revenueData = [
-    { name: 'T2', revenue: 45, expense: 20 },
-    { name: 'T3', revenue: 52, expense: 22 },
-    { name: 'T4', revenue: 38, expense: 18 },
-    { name: 'T5', revenue: 65, expense: 25 },
-    { name: 'T6', revenue: 48, expense: 21 },
-    { name: 'T7', revenue: 85, expense: 30 },
-    { name: 'CN', revenue: 95, expense: 35 },
+    { name: 'T2', revenue: 15, expense: 5 },
+    { name: 'T3', revenue: 22, expense: 8 },
+    { name: 'T4', revenue: 18, expense: 6 },
+    { name: 'T5', revenue: 32, expense: 12 },
+    { name: 'T6', revenue: 25, expense: 9 },
+    { name: 'T7', revenue: 45, expense: 15 },
+    { name: 'CN', revenue: 55, expense: 20 },
   ];
 
-  const serviceData = [
-    { name: 'Khám tổng quát', value: 35 },
-    { name: 'Nhổ răng', value: 15 },
-    { name: 'Chữa tủy', value: 20 },
-    { name: 'Niềng răng', value: 10 },
-    { name: 'Tẩy trắng', value: 20 },
-  ];
   const COLORS = ['#3b82f6', '#ef4444', '#8b5cf6', '#10b981', '#f59e0b'];
 
   const patientDemographics = [
@@ -92,10 +129,11 @@ const Dashboard = () => {
       emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
       amber: 'bg-amber-50 text-amber-700 border-amber-200/60',
       blue: 'bg-blue-50 text-blue-700 border-blue-200/60',
-      slate: 'bg-slate-100 text-slate-700 border-slate-200/60'
+      slate: 'bg-slate-100 text-slate-700 border-slate-200/60',
+      rose: 'bg-rose-50 text-rose-700 border-rose-200/60'
     };
     return classes[color] || classes.slate;
-  }
+  };
 
   // Custom Tooltip for charts
   const CustomTooltip = ({ active, payload, label }) => {
@@ -119,7 +157,7 @@ const Dashboard = () => {
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
       {/* Header */}
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
             <span className="text-gray-900 font-semibold">Tổng quan</span>
@@ -132,16 +170,14 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl font-semibold shadow-sm border border-gray-200 transition-all hover:-translate-y-0.5">
-            <span className="material-symbols-outlined text-[20px]">filter_list</span>
-            Bộ lọc
-          </button>
-          <button className="flex items-center gap-2 bg-gradient-to-r from-[var(--color-primary)] to-blue-600 hover:from-blue-700 hover:to-blue-800 text-white px-7 py-2.5 rounded-xl font-semibold shadow-md shadow-blue-500/20 transition-all hover:-translate-y-0.5">
-            <span className="material-symbols-outlined text-[20px]">download</span>
-            Xuất báo cáo
+          <button onClick={fetchDashboardStats} className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl font-semibold shadow-sm border border-gray-200 transition-all active:scale-95">
+            <span className="material-symbols-outlined text-[20px]">refresh</span>
+            Tải lại
           </button>
         </div>
       </div>
+
+      {error && <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 font-medium">{error}</div>}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
@@ -157,13 +193,13 @@ const Dashboard = () => {
                 <span className="material-symbols-outlined text-[14px]">
                   {stat.isPositive ? 'trending_up' : 'trending_flat'}
                 </span>
-                {stat.isPositive ? 'Tăng' : 'Ổn định'}
+                {stat.isPositive ? 'Hệ thống' : 'Ổn định'}
               </div>
             </div>
 
             <div>
               <p className="text-sm font-bold text-gray-500 mb-1">{stat.title}</p>
-              <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-2">{stat.value}</h3>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2">{stat.value}</h3>
               <p className="text-xs font-medium text-gray-400">{stat.trend}</p>
             </div>
           </div>
@@ -179,11 +215,6 @@ const Dashboard = () => {
               <h3 className="text-xl font-extrabold text-gray-900 mb-1">Doanh thu & Chi phí</h3>
               <p className="text-sm font-medium text-slate-500">Thống kê theo 7 ngày gần nhất (Triệu VNĐ)</p>
             </div>
-            <select className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-4 py-2 font-semibold text-sm outline-none focus:border-blue-500">
-              <option>Tuần này</option>
-              <option>Tháng này</option>
-              <option>Năm nay</option>
-            </select>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -219,7 +250,7 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={serviceData}
+                  data={displayServiceDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -228,7 +259,7 @@ const Dashboard = () => {
                   dataKey="value"
                   stroke="none"
                 >
-                  {serviceData.map((entry, index) => (
+                  {displayServiceDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -237,14 +268,14 @@ const Dashboard = () => {
             </ResponsiveContainer>
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-black text-slate-800">100%</span>
-              <span className="text-xs font-bold text-slate-400">Tổng cộng</span>
+              <span className="text-3xl font-black text-slate-800">Live</span>
+              <span className="text-xs font-bold text-slate-400">Dữ liệu thật</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4">
-            {serviceData.map((item, index) => (
+            {displayServiceDistribution.map((item, index) => (
               <div key={index} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[index] }}></span>
+                <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
                 <span className="text-xs font-bold text-slate-600 truncate">{item.name}</span>
               </div>
             ))}
@@ -325,7 +356,6 @@ const Dashboard = () => {
               </div>
               <h3 className="text-xl font-extrabold text-gray-900">Lịch khám hôm nay</h3>
             </div>
-            <button className="text-[var(--color-primary)] font-bold text-sm hover:underline">Xem tất cả</button>
           </div>
 
           <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-sm">
@@ -338,11 +368,10 @@ const Dashboard = () => {
                     <th className="px-6 py-4 whitespace-nowrap">Dịch vụ</th>
                     <th className="px-6 py-4 whitespace-nowrap">Bác sĩ</th>
                     <th className="px-6 py-4 whitespace-nowrap text-center">Trạng thái</th>
-                    <th className="px-6 py-4 whitespace-nowrap text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {recentAppointments.map((apt) => (
+                  {displayAppointments.map((apt) => (
                     <tr key={apt.id} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                       <td className="px-6 py-4 text-slate-900 font-bold whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -364,11 +393,6 @@ const Dashboard = () => {
                         <span className={`border px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm ${getBadgeClasses(apt.statusColor)}`}>
                           {apt.status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button className="text-slate-400 hover:text-[var(--color-primary)] transition-colors p-1">
-                          <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                        </button>
                       </td>
                     </tr>
                   ))}

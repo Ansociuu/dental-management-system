@@ -2,7 +2,7 @@
  * Script nạp dữ liệu mẫu (Seed Data)
  * Chạy: npm run seed
  * 
- * Tạo dữ liệu mẫu ngẫu nhiên cho: Users (Bác sĩ), Services, Shifts, Patients
+ * Tạo dữ liệu mẫu ngẫu nhiên cho: Users (Bác sĩ), Services, Shifts, Patients, DutySchedules
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -11,6 +11,7 @@ const Service = require('../models/Service');
 const Shift = require('../models/Shift');
 const Patient = require('../models/Patient');
 const Holiday = require('../models/Holiday');
+const DutySchedule = require('../models/DutySchedule');
 
 const seedData = async () => {
   try {
@@ -23,6 +24,7 @@ const seedData = async () => {
     await Shift.deleteMany({});
     await Patient.deleteMany({});
     await Holiday.deleteMany({});
+    await DutySchedule.deleteMany({});
     console.log('🗑️  Đã xóa dữ liệu cũ');
 
     // 1. Tạo Users (Bác sĩ & Nhân viên)
@@ -82,6 +84,37 @@ const seedData = async () => {
     ]);
     console.log(`🏖️  Đã tạo ${holidays.length} ngày nghỉ mẫu`);
 
+    // 6. Tự động phân lịch trực Bác sĩ cho 30 ngày tiếp theo để dễ dàng kiểm thử đặt lịch
+    const doctorsList = users.filter(u => u.role === 'DOCTOR');
+    const dutySchedulesData = [];
+
+    // Tạo lịch trực từ hôm nay đến 30 ngày sau
+    for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + dayOffset);
+      // Đặt giờ về 0 để đồng bộ ngày khám
+      targetDate.setHours(0, 0, 0, 0);
+
+      // Cho mỗi ca làm việc, phân ngẫu nhiên 2 bác sĩ trực
+      shifts.forEach(shift => {
+        // Trộn ngẫu nhiên danh sách bác sĩ
+        const shuffledDocs = [...doctorsList].sort(() => 0.5 - Math.random());
+        const selectedDocsForShift = shuffledDocs.slice(0, 2); // Chọn 2 bác sĩ cho ca này
+
+        selectedDocsForShift.forEach(doctor => {
+          dutySchedulesData.push({
+            doctorId: doctor._id,
+            date: targetDate,
+            shiftId: shift._id,
+            status: 'ACTIVE'
+          });
+        });
+      });
+    }
+
+    const dutySchedules = await DutySchedule.create(dutySchedulesData);
+    console.log(`📅 Đã phân ${dutySchedules.length} lượt trực cho các Bác sĩ trong 30 ngày tới`);
+
     console.log('\n🎉 ===== SEED DATA HOÀN TẤT =====');
     console.log(`📊 Tổng kết:`);
     console.log(`   - ${users.length} Users (Bác sĩ & Nhân viên)`);
@@ -89,6 +122,7 @@ const seedData = async () => {
     console.log(`   - ${shifts.length} Ca làm việc`);
     console.log(`   - ${patients.length} Bệnh nhân`);
     console.log(`   - ${holidays.length} Ngày nghỉ`);
+    console.log(`   - ${dutySchedules.length} Lượt phân lịch trực bác sĩ`);
 
     await mongoose.connection.close();
     console.log('\n🔌 Đã đóng kết nối MongoDB');

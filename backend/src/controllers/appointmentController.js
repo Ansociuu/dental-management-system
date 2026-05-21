@@ -3,6 +3,22 @@ const DutySchedule = require('../models/DutySchedule');
 const Holiday = require('../models/Holiday');
 const Shift = require('../models/Shift');
 
+// Helper to construct a robust 24-hour date range ignoring timezone shifts
+const getDayRange = (dateInput) => {
+  const parsed = new Date(dateInput);
+  
+  const utcStart = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 0, 0, 0, 0));
+  const utcEnd = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 23, 59, 59, 999));
+  
+  const localStart = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0);
+  const localEnd = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999);
+
+  const gte = new Date(Math.min(utcStart.getTime(), localStart.getTime()));
+  const lte = new Date(Math.max(utcEnd.getTime(), localEnd.getTime()));
+  
+  return { $gte: gte, $lte: lte };
+};
+
 /**
  * @desc    Đăng ký lịch khám mới
  * @route   POST /api/v1/appointments
@@ -28,7 +44,7 @@ const createAppointment = async (req, res, next) => {
     // 2. Ràng buộc: Bác sĩ phải có lịch trực hợp lệ vào ngày và ca đó
     const dutyExists = await DutySchedule.findOne({
       doctorId,
-      date: appointmentDate,
+      date: getDayRange(appointmentDate),
       shiftId,
       status: 'ACTIVE'
     });
@@ -49,7 +65,7 @@ const createAppointment = async (req, res, next) => {
     const currentCount = await Appointment.countDocuments({
       doctorId,
       shiftId,
-      date: appointmentDate,
+      date: getDayRange(appointmentDate),
       status: { $in: ['PENDING', 'CONFIRMED', 'CHECKED_IN'] }
     });
 
@@ -86,7 +102,7 @@ const createAppointment = async (req, res, next) => {
 const monitorAppointments = async (req, res, next) => {
   try {
     const filter = {};
-    if (req.query.date) filter.date = new Date(req.query.date);
+    if (req.query.date) filter.date = getDayRange(req.query.date);
     if (req.query.doctorId) filter.doctorId = req.query.doctorId;
     if (req.query.status) filter.status = req.query.status;
     if (req.query.shiftId) filter.shiftId = req.query.shiftId;
@@ -111,7 +127,7 @@ const monitorAppointments = async (req, res, next) => {
 const getAppointments = async (req, res, next) => {
   try {
     const filter = {};
-    if (req.query.date) filter.date = new Date(req.query.date);
+    if (req.query.date) filter.date = getDayRange(req.query.date);
     if (req.query.patientId) filter.patientId = req.query.patientId;
 
     const appointments = await Appointment.find(filter)

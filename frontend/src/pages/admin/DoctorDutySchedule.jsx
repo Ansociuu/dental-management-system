@@ -20,25 +20,11 @@ const DoctorDutySchedule = () => {
       const [dutiesRes, shiftsRes, doctorsRes] = await Promise.all([
         getDutySchedules({ date: filterDate }),
         getShifts(),
-        apiFetch('/duty-schedules?startDate=2020-01-01&endDate=2030-12-31').then(() => apiFetch('/shifts')).catch(() => ({ data: [] }))
+        apiFetch('/users?role=DOCTOR')
       ]);
-      setDuties(dutiesRes.data);
-      setShifts(shiftsRes.data);
-      // Fetch doctors list
-      try {
-        const res = await fetch('http://localhost:5000/api/v1/duty-schedules?startDate=2020-01-01&endDate=2030-12-31');
-        const data = await res.json();
-        // Extract unique doctors
-        const uniqueDoctors = [];
-        const seen = new Set();
-        data.data?.forEach(d => {
-          if (d.doctorId && !seen.has(d.doctorId._id)) {
-            seen.add(d.doctorId._id);
-            uniqueDoctors.push(d.doctorId);
-          }
-        });
-        if (uniqueDoctors.length > 0) setDoctors(uniqueDoctors);
-      } catch(e) { /* ignore */ }
+      setDuties(dutiesRes.data || []);
+      setShifts(shiftsRes.data || []);
+      setDoctors(doctorsRes.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,28 +32,9 @@ const DoctorDutySchedule = () => {
     }
   };
 
-  // Also fetch doctors directly from users if we don't have them
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        // We'll create a simple endpoint or use seed data
-        const res = await fetch('http://localhost:5000/api/v1/duty-schedules');
-        const data = await res.json();
-        const uniqueDoctors = [];
-        const seen = new Set();
-        data.data?.forEach(d => {
-          if (d.doctorId && !seen.has(d.doctorId._id)) {
-            seen.add(d.doctorId._id);
-            uniqueDoctors.push(d.doctorId);
-          }
-        });
-        if (uniqueDoctors.length > 0) setDoctors(uniqueDoctors);
-      } catch(e) { /* We'll add a doctors endpoint */ }
-    };
-    fetchDoctors();
-  }, []);
-
-  useEffect(() => { fetchData(); }, [filterDate]);
+    fetchData();
+  }, [filterDate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

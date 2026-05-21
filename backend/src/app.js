@@ -13,6 +13,7 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 const userRoutes = require("./routes/userRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const authRoutes = require("./routes/authRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/v1/appointments", appointmentRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 
 // Middleware xử lý lỗi tập trung (phải đặt sau tất cả routes)

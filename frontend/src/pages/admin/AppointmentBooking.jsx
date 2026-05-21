@@ -3,6 +3,7 @@ import { createAppointment } from '../../services/appointmentService';
 import { getShifts } from '../../services/shiftService';
 import { getPatients } from '../../services/patientService';
 import { getDutySchedules } from '../../services/dutyService';
+import { getServices } from '../../services/serviceService';
 
 const AppointmentBooking = () => {
   const [shifts, setShifts] = useState([]);
@@ -18,22 +19,19 @@ const AppointmentBooking = () => {
   useEffect(() => {
     const fetchInitial = async () => {
       try {
-        const [shiftsRes, patientsRes] = await Promise.all([getShifts(), getPatients()]);
-        setShifts(shiftsRes.data);
-        setPatients(patientsRes.data);
-        // Fetch services
-        const svcRes = await fetch('http://localhost:5000/api/v1/shifts');
-        // Get services from a different call
-        try {
-          const res = await fetch('http://localhost:5000/api/v1/appointments');
-          const data = await res.json();
-          // Extract services from existing appointments if any
-        } catch(e) {}
-      } catch (err) { setError(err.message); }
+        const [shiftsRes, patientsRes, servicesRes] = await Promise.all([
+          getShifts(),
+          getPatients(),
+          getServices()
+        ]);
+        setShifts(shiftsRes.data || []);
+        setPatients(patientsRes.data || []);
+        setServices(servicesRes.data || []);
+      } catch (err) {
+        setError(err.message);
+      }
     };
     fetchInitial();
-    // Fetch services list
-    fetch('http://localhost:5000/api/v1/appointments').catch(() => {});
   }, []);
 
   // Fetch doctors when date + shift change
@@ -42,9 +40,12 @@ const AppointmentBooking = () => {
       const fetchDoctors = async () => {
         try {
           const res = await getDutySchedules({ date: form.date, shiftId: form.shiftId });
+          // Available doctors are returned in doctorId field
           const availableDoctors = res.data.map(d => d.doctorId).filter(Boolean);
           setDoctors(availableDoctors);
-        } catch (err) { setDoctors([]); }
+        } catch (err) {
+          setDoctors([]);
+        }
       };
       fetchDoctors();
     } else {
@@ -146,8 +147,19 @@ const AppointmentBooking = () => {
             {/* Service */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600">Dịch vụ <span className="text-rose-500">*</span></label>
-              <input type="text" required placeholder="Nhập ID dịch vụ (từ seed data)" value={form.serviceId} onChange={e => setForm({...form, serviceId: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
-              <p className="text-[11px] text-slate-400">💡 Chạy seed script để có danh sách dịch vụ. ID sẽ được hiển thị trong MongoDB.</p>
+              <select 
+                required 
+                value={form.serviceId} 
+                onChange={e => setForm({...form, serviceId: e.target.value})} 
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">— Chọn dịch vụ nha khoa —</option>
+                {services.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.name} — {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(s.price)}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Symptoms */}
