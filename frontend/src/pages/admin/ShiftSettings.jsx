@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getShifts, createShift, updateShift } from '../../services/shiftService';
+import { getShifts, createShift, updateShift, deleteShift } from '../../services/shiftService';
 
 const ShiftSettings = () => {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', startTime: '', endTime: '', maxPatients: '' });
+  const [form, setForm] = useState({ name: '', startTime: '', endTime: '' });
   const [error, setError] = useState('');
 
   const fetchShifts = async () => {
@@ -27,7 +27,7 @@ const ShiftSettings = () => {
     e.preventDefault();
     setError('');
     try {
-      const payload = { ...form, maxPatients: Number(form.maxPatients) };
+      const payload = { ...form };
       if (editingId) {
         await updateShift(editingId, payload);
       } else {
@@ -35,7 +35,7 @@ const ShiftSettings = () => {
       }
       setIsModalOpen(false);
       setEditingId(null);
-      setForm({ name: '', startTime: '', endTime: '', maxPatients: '' });
+      setForm({ name: '', startTime: '', endTime: '' });
       fetchShifts();
     } catch (err) {
       setError(err.message);
@@ -44,8 +44,19 @@ const ShiftSettings = () => {
 
   const handleEdit = (s) => {
     setEditingId(s._id);
-    setForm({ name: s.name, startTime: s.startTime, endTime: s.endTime, maxPatients: s.maxPatients });
+    setForm({ name: s.name, startTime: s.startTime, endTime: s.endTime });
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa ca làm việc này?')) return;
+    setError('');
+    try {
+      await deleteShift(id);
+      fetchShifts();
+    } catch (err) {
+      setError(err.message || 'Lỗi khi xóa ca làm việc');
+    }
   };
 
   const shiftColors = ['from-blue-500 to-indigo-500', 'from-amber-500 to-orange-500', 'from-violet-500 to-purple-500'];
@@ -64,7 +75,7 @@ const ShiftSettings = () => {
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Thiết lập Ca làm việc</h1>
           <p className="text-sm text-gray-500 font-medium mt-1">Định nghĩa thời gian và số lượng bệnh nhân tối đa cho từng ca</p>
         </div>
-        <button onClick={() => { setEditingId(null); setForm({ name: '', startTime: '', endTime: '', maxPatients: '' }); setError(''); setIsModalOpen(true); }} className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-[#1e40af] hover:bg-[#1e3a8a] transition-all shadow-sm">
+        <button onClick={() => { setEditingId(null); setForm({ name: '', startTime: '', endTime: '' }); setError(''); setIsModalOpen(true); }} className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-[#1e40af] hover:bg-[#1e3a8a] transition-all shadow-sm">
           <span className="material-symbols-outlined text-[18px]">add</span>
           Thêm ca mới
         </button>
@@ -99,20 +110,18 @@ const ShiftSettings = () => {
               </div>
               {/* Card Body */}
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <span className="material-symbols-outlined text-[18px] text-slate-400">groups</span>
-                    <span className="font-medium">Tối đa bệnh nhân</span>
-                  </div>
-                  <span className="text-2xl font-extrabold text-slate-800">{shift.maxPatients}</span>
-                </div>
                 <div className="flex items-center justify-between">
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${shift.status === 'ACTIVE' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                     {shift.status === 'ACTIVE' ? '✓ Đang hoạt động' : 'Tạm ngưng'}
                   </span>
-                  <button onClick={() => handleEdit(shift)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100">
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
+                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleEdit(shift)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Sửa ca">
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button onClick={() => handleDelete(shift._id)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors" title="Xóa ca">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -142,10 +151,6 @@ const ShiftSettings = () => {
                   <label className="text-xs font-bold text-slate-600">Giờ kết thúc <span className="text-rose-500">*</span></label>
                   <input type="time" required value={form.endTime} onChange={e => setForm({...form, endTime: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600">Số bệnh nhân tối đa <span className="text-rose-500">*</span></label>
-                <input type="number" min="1" required value={form.maxPatients} onChange={e => setForm({...form, maxPatients: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="VD: 15" />
               </div>
               {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
               <div className="flex justify-end gap-3 pt-2">

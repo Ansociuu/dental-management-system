@@ -22,8 +22,10 @@ const Login = () => {
       setLoading(true);
       const user = await login({ email, password });
       
-      // Chuyển hướng người dùng dựa trên vai trò hoặc mặc định về dashboard admin
-      if (user.role === 'ADMIN' || user.role === 'RECEPTIONIST' || user.role === 'DOCTOR') {
+      // Chuyển hướng người dùng dựa trên vai trò hoặc mặc định về dashboard tương ứng
+      if (user.role === 'DOCTOR') {
+        navigate('/doctor');
+      } else if (user.role === 'ADMIN' || user.role === 'RECEPTIONIST') {
         navigate('/admin');
       } else {
         navigate('/');

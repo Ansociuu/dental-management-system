@@ -9,7 +9,6 @@ const AdminLayout = () => {
     location.pathname.includes('/admin/users') || 
     location.pathname.includes('/admin/staff') || 
     location.pathname.includes('/admin/customers') ||
-    location.pathname.includes('/admin/patients-temp') ||
     location.pathname.includes('/admin/doctor-profile') ? 'Người dùng' : 
     location.pathname.includes('/admin/appointments/') ? 'Lịch hẹn' :
     location.pathname.includes('/admin/reports') ? 'Báo cáo' : 
@@ -32,7 +31,6 @@ const AdminLayout = () => {
         { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules' }
       ]
     },
-    { icon: 'person', label: 'Hồ sơ bệnh án', path: '/admin/records' },
     { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services' },
     { 
       icon: 'manage_accounts', 
@@ -41,8 +39,7 @@ const AdminLayout = () => {
       isExpandable: true,
       subItems: [
         { label: 'Nhân viên', path: '/admin/users' },
-        { label: 'Khách hàng', path: '/admin/customers' },
-        { label: 'Bệnh nhân tạm thời', path: '/admin/patients-temp' }
+        { label: 'Khách hàng', path: '/admin/customers' }
       ]
     },
     { icon: 'security', label: 'Phân quyền', path: '/admin/roles' },
@@ -148,6 +145,7 @@ const AdminLayout = () => {
                           <li key={subIndex}>
                             <NavLink
                               to={subItem.path}
+                              end
                               className={({ isActive }) => 
                                 `block px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                   isActive || (subItem.path === '/admin/users' && location.pathname.includes('doctor-profile')) || (subItem.path === '/admin/reports/revenue' && location.pathname === '/admin/reports')
@@ -166,6 +164,7 @@ const AdminLayout = () => {
                 ) : (
                   <NavLink
                     to={item.path}
+                    end
                     className={({ isActive }) =>
                       `flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${isActive || (item.path === '/admin/records' && window.location.pathname === '/admin')
                         ? 'bg-blue-50 text-[var(--color-primary)] shadow-sm'

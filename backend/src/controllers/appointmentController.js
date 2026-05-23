@@ -112,6 +112,7 @@ const monitorAppointments = async (req, res, next) => {
       .populate('doctorId', 'fullName specialization')
       .populate('shiftId', 'name startTime endTime')
       .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price')
       .sort({ queueNumber: 1 });
 
     res.json({ success: true, data: appointments });
@@ -131,10 +132,11 @@ const getAppointments = async (req, res, next) => {
     if (req.query.patientId) filter.patientId = req.query.patientId;
 
     const appointments = await Appointment.find(filter)
-      .populate('patientId', 'fullName phone patientCode')
-      .populate('doctorId', 'fullName')
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('doctorId', 'fullName specialization')
       .populate('shiftId', 'name startTime endTime')
-      .populate('serviceId', 'name')
+      .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price')
       .sort({ date: -1, queueNumber: 1 });
 
     res.json({ success: true, data: appointments });
@@ -151,7 +153,7 @@ const getAppointments = async (req, res, next) => {
 const updateAppointmentStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+    const validStatuses = ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
     if (!validStatuses.includes(status)) {
       const error = new Error(`Trạng thái không hợp lệ. Chỉ chấp nhận: ${validStatuses.join(', ')}`);
       error.statusCode = 400;
@@ -174,4 +176,110 @@ const updateAppointmentStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { createAppointment, monitorAppointments, getAppointments, updateAppointmentStatus };
+/**
+ * @desc    Lấy danh sách cuộc hẹn của bác sĩ đăng nhập (hôm nay hoặc ngày tùy chọn)
+ * @route   GET /api/v1/appointments/doctor-today
+ */
+const getDoctorTodayAppointments = async (req, res, next) => {
+  try {
+    const doctorId = req.user._id;
+    const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+
+    const appointments = await Appointment.find({
+      doctorId,
+      date: getDayRange(targetDate)
+    })
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('shiftId', 'name startTime endTime')
+      .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price')
+      .sort({ queueNumber: 1 });
+
+    res.json({ success: true, data: appointments });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Bác sĩ lưu kết quả khám lâm sàng & kết thúc ca khám
+ * @route   PUT /api/v1/appointments/:id/examine
+ */
+const examineAppointment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { diagnosis, clinicalNotes, servicesPerformed, prescription, teethImages, dentalChart } = req.body;
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      const error = new Error('Không tìm thấy lịch khám');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Đảm bảo chỉ bác sĩ được phân công hoặc admin được cập nhật
+    if (req.user.role === 'DOCTOR' && appointment.doctorId.toString() !== req.user._id.toString()) {
+      const error = new Error('Bạn không được phân công phụ trách ca khám này.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (diagnosis !== undefined) appointment.diagnosis = diagnosis;
+    if (clinicalNotes !== undefined) appointment.clinicalNotes = clinicalNotes;
+    if (servicesPerformed !== undefined) appointment.servicesPerformed = servicesPerformed;
+    if (prescription !== undefined) appointment.prescription = prescription;
+    if (teethImages !== undefined) appointment.teethImages = teethImages;
+    if (dentalChart !== undefined) appointment.dentalChart = dentalChart;
+
+    // Chuyển trạng thái về COMPLETED để hoàn tất
+    appointment.status = 'COMPLETED';
+
+    await appointment.save();
+
+    const populated = await Appointment.findById(id)
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('doctorId', 'fullName specialization')
+      .populate('shiftId', 'name startTime endTime')
+      .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price');
+
+    res.json({ success: true, message: 'Lưu bệnh án & hoàn tất khám thành công!', data: populated });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Lấy chi tiết một lịch khám theo ID
+ * @route   GET /api/v1/appointments/:id
+ */
+const getAppointmentById = async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id)
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('doctorId', 'fullName specialization')
+      .populate('shiftId', 'name startTime endTime')
+      .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price');
+
+    if (!appointment) {
+      const error = new Error('Không tìm thấy lịch khám');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    res.json({ success: true, data: appointment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { 
+  createAppointment, 
+  monitorAppointments, 
+  getAppointments, 
+  updateAppointmentStatus,
+  getDoctorTodayAppointments,
+  examineAppointment,
+  getAppointmentById
+};

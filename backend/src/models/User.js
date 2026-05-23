@@ -15,7 +15,14 @@ const userSchema = new mongoose.Schema({
     enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST'], 
     default: 'DOCTOR' 
   },
-  specialization: { type: String }, // Chuyên môn (dành cho Bác sĩ)
+  specialization: { type: String }, // Chuyên môn tóm tắt (legacy, dành cho Bác sĩ)
+  // === Trường mở rộng cho hồ sơ Bác sĩ ===
+  dob: { type: Date },                                     // Ngày sinh
+  gender: { type: String, enum: ['Nam', 'Nữ', ''], default: '' }, // Giới tính
+  licenseNumber: { type: String },                          // Số chứng chỉ hành nghề
+  specialties: [{ type: String }],                          // Danh sách chuyên khoa (mảng tag)
+  experience: { type: String },                             // Bằng cấp & Kinh nghiệm
+  avatar: { type: String },                                 // URL ảnh đại diện
   status: { 
     type: String, 
     enum: ['ACTIVE', 'INACTIVE'], 

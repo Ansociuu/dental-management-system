@@ -25,15 +25,37 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
+// GET /api/v1/users/:id
+exports.getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+    res.json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST /api/v1/users
 exports.createUser = async (req, res, next) => {
   try {
-    const { fullName, email, phone, role, specialization, status, password } = req.body;
+    const { fullName, email, phone, role, specialization, status, password,
+            dob, gender, licenseNumber, specialties, experience, avatar } = req.body;
     
     // Check if email already exists
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống' });
+    }
+
+    // Check if licenseNumber is duplicated (for doctors)
+    if (licenseNumber) {
+      const licDup = await User.findOne({ licenseNumber });
+      if (licDup) {
+        return res.status(400).json({ success: false, message: `Số chứng chỉ hành nghề đã tồn tại (${licDup.fullName})` });
+      }
     }
 
     const newUser = await User.create({
@@ -43,7 +65,13 @@ exports.createUser = async (req, res, next) => {
       password: password || '123456', // Mật khẩu mặc định
       role: role ? role.toUpperCase() : 'DOCTOR',
       specialization,
-      status: status ? status.toUpperCase() : 'ACTIVE'
+      status: status ? status.toUpperCase() : 'ACTIVE',
+      dob: dob || undefined,
+      gender: gender || '',
+      licenseNumber: licenseNumber || '',
+      specialties: specialties || [],
+      experience: experience || '',
+      avatar: avatar || ''
     });
 
     res.status(201).json({ success: true, data: newUser });
@@ -55,7 +83,8 @@ exports.createUser = async (req, res, next) => {
 // PUT /api/v1/users/:id
 exports.updateUser = async (req, res, next) => {
   try {
-    const { fullName, email, phone, role, specialization, status } = req.body;
+    const { fullName, email, phone, role, specialization, status,
+            dob, gender, licenseNumber, specialties, experience, avatar } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -71,11 +100,25 @@ exports.updateUser = async (req, res, next) => {
       user.email = email;
     }
 
+    // Check if licenseNumber belongs to someone else
+    if (licenseNumber && licenseNumber !== user.licenseNumber) {
+      const licDup = await User.findOne({ licenseNumber, _id: { $ne: user._id } });
+      if (licDup) {
+        return res.status(400).json({ success: false, message: `Số chứng chỉ hành nghề đã tồn tại (${licDup.fullName})` });
+      }
+    }
+
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
     if (role) user.role = role.toUpperCase();
     if (specialization !== undefined) user.specialization = specialization;
     if (status) user.status = status.toUpperCase();
+    if (dob !== undefined) user.dob = dob || null;
+    if (gender !== undefined) user.gender = gender;
+    if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
+    if (specialties !== undefined) user.specialties = specialties;
+    if (experience !== undefined) user.experience = experience;
+    if (avatar !== undefined) user.avatar = avatar;
 
     await user.save();
     res.json({ success: true, data: user });
@@ -92,8 +135,6 @@ exports.deleteUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
-    // Optional: Check if doctor has duty schedules or appointments before deleting
-    // For simplicity, we allow deleting but can check if needed.
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Đã xóa người dùng thành công' });
   } catch (error) {

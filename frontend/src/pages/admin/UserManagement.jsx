@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/userService';
 
 const roleMap = {
@@ -26,6 +27,7 @@ const statusMapRev = {
 };
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,6 +254,11 @@ const UserManagement = () => {
                     </td>
                     <td className="px-8 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {user.role === 'DOCTOR' && (
+                          <button onClick={() => navigate(`/admin/doctor-profile/${user._id}`)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors" title="Xem hồ sơ bác sĩ">
+                            <span className="material-symbols-outlined text-[18px]">badge</span>
+                          </button>
+                        )}
                         <button onClick={() => handleEdit(user)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Chỉnh sửa">
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>

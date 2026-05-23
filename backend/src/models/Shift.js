@@ -13,7 +13,7 @@ const shiftSchema = new mongoose.Schema({
   name: { type: String, required: [true, 'Tên ca là bắt buộc'], unique: true },
   startTime: { type: String, required: [true, 'Giờ bắt đầu là bắt buộc'] },
   endTime: { type: String, required: [true, 'Giờ kết thúc là bắt buộc'] },
-  maxPatients: { type: Number, required: [true, 'Số bệnh nhân tối đa là bắt buộc'], min: 1 },
+  maxPatients: { type: Number, default: 20, min: 1 },
   status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' }
 }, { timestamps: true });
 

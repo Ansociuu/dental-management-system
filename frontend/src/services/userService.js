@@ -5,6 +5,8 @@ export const getUsers = (params = {}) => {
   return apiFetch(`/users${query ? `?${query}` : ''}`);
 };
 
+export const getUserById = (id) => apiFetch(`/users/${id}`);
+
 export const createUser = (data) => apiFetch('/users', {
   method: 'POST',
   body: JSON.stringify(data),

@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
-import PatientRecord from './pages/admin/PatientRecord';
 import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import CustomerManagement from './pages/admin/CustomerManagement';
@@ -21,10 +20,16 @@ import ShiftSettings from './pages/admin/ShiftSettings';
 import DoctorDutySchedule from './pages/admin/DoctorDutySchedule';
 import AppointmentBooking from './pages/admin/AppointmentBooking';
 import AppointmentMonitor from './pages/admin/AppointmentMonitor';
-import PatientManagementTemp from './pages/admin/PatientManagementTemp';
 
-// Component bảo vệ các tuyến đường Admin
-const ProtectedRoute = ({ children }) => {
+// Imports phân hệ Bác sĩ
+import DoctorLayout from './layouts/DoctorLayout';
+import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import DoctorAppointmentDetail from './pages/doctor/DoctorAppointmentDetail';
+import DoctorPatientRecord from './pages/doctor/DoctorPatientRecord';
+import DoctorSelfDutySchedule from './pages/doctor/DoctorDutySchedule';
+
+// Component bảo vệ các tuyến đường theo vai trò
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -42,7 +47,24 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Điều hướng ngược lại nếu không khớp phân quyền
+    if (user.role === 'DOCTOR') {
+      return <Navigate to="/doctor/dashboard" replace />;
+    }
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   return children;
+};
+
+// Điều hướng mặc định dựa trên vai trò
+const DefaultRedirect = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'DOCTOR') return <Navigate to="/doctor/dashboard" replace />;
+  return <Navigate to="/admin/dashboard" replace />;
 };
 
 function App() {
@@ -57,7 +79,7 @@ function App() {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTIONIST']}>
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -69,11 +91,9 @@ function App() {
             <Route path="appointments/book" element={<AppointmentBooking />} />
             <Route path="appointments/monitor" element={<AppointmentMonitor />} />
             <Route path="appointments/duty-schedules" element={<DoctorDutySchedule />} />
-            <Route path="records" element={<PatientRecord />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="staff" element={<UserManagement />} />
             <Route path="customers" element={<CustomerManagement />} />
-            <Route path="patients-temp" element={<PatientManagementTemp />} />
             <Route path="services" element={<ServiceManagement />} />
             <Route path="roles" element={<RoleManagement />} />
             <Route path="reports/revenue" element={<RevenueReport />} />
@@ -82,11 +102,28 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="shifts" element={<ShiftSettings />} />
             <Route path="holidays" element={<HolidaySettings />} />
-            <Route path="doctor-profile" element={<DoctorProfile />} />
+            <Route path="doctor-profile/new" element={<DoctorProfile />} />
+            <Route path="doctor-profile/:id" element={<DoctorProfile />} />
+          </Route>
+
+          {/* Tuyến đường Bác sĩ (Doctor Flow) */}
+          <Route 
+            path="/doctor" 
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <DoctorLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DoctorDashboard />} />
+            <Route path="appointments/:id" element={<DoctorAppointmentDetail />} />
+            <Route path="records" element={<DoctorPatientRecord />} />
+            <Route path="duty-schedules" element={<DoctorSelfDutySchedule />} />
           </Route>
 
           {/* Catch all redirect */}
-          <Route path="*" element={<Navigate to="/admin" replace />} />
+          <Route path="*" element={<DefaultRedirect />} />
         </Routes>
       </Router>
     </AuthProvider>

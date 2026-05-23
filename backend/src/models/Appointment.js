@@ -34,10 +34,34 @@ const appointmentSchema = new mongoose.Schema({
   symptoms: { type: String },
   status: { 
     type: String, 
-    enum: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'], 
+    enum: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'], 
     default: 'PENDING' 
   },
-  queueNumber: { type: Number }
+  queueNumber: { type: Number },
+  
+  // Các trường lâm sàng cập nhật bởi Bác sĩ khi khám bệnh
+  diagnosis: { type: String },
+  clinicalNotes: { type: String },
+  servicesPerformed: [{
+    serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+    quantity: { type: Number, default: 1 },
+    priceAtAppointment: { type: Number }
+  }],
+  prescription: [{
+    medicineName: { type: String, required: true },
+    dosage: { type: String },     // VD: "500mg"
+    qty: { type: Number, default: 1 },
+    frequency: { type: String },   // VD: "Sáng 1 viên, tối 1 viên sau ăn"
+    duration: { type: String }     // VD: "5 ngày"
+  }],
+  teethImages: [{ type: String }], // Mảng lưu các URLs ảnh X-quang hoặc răng
+  dentalChart: {
+    type: Map,
+    of: {
+      condition: { type: String, enum: ['HEALTHY', 'DECAYED', 'FILLED', 'RCT', 'MISSING'] },
+      notes: { type: String }
+    }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

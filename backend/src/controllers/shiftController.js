@@ -8,14 +8,14 @@ const createShift = async (req, res, next) => {
   try {
     const { name, startTime, endTime, maxPatients } = req.body;
 
-    // Ràng buộc: Giờ kết thúc phải lớn hơn giờ bắt đầu
-    if (endTime <= startTime) {
-      const error = new Error('Giờ kết thúc phải lớn hơn giờ bắt đầu');
+    // Ràng buộc: Giờ bắt đầu và giờ kết thúc không được trùng nhau
+    if (startTime === endTime) {
+      const error = new Error('Giờ bắt đầu và giờ kết thúc không được trùng nhau');
       error.statusCode = 400;
       throw error;
     }
 
-    const shift = await Shift.create({ name, startTime, endTime, maxPatients });
+    const shift = await Shift.create({ name, startTime, endTime, maxPatients: maxPatients || 20 });
     res.status(201).json({ success: true, message: 'Tạo ca làm việc thành công!', data: shift });
   } catch (error) {
     next(error);
@@ -43,8 +43,8 @@ const updateShift = async (req, res, next) => {
   try {
     const { startTime, endTime } = req.body;
 
-    if (startTime && endTime && endTime <= startTime) {
-      const error = new Error('Giờ kết thúc phải lớn hơn giờ bắt đầu');
+    if (startTime && endTime && startTime === endTime) {
+      const error = new Error('Giờ bắt đầu và giờ kết thúc không được trùng nhau');
       error.statusCode = 400;
       throw error;
     }
@@ -61,4 +61,22 @@ const updateShift = async (req, res, next) => {
   }
 };
 
-module.exports = { createShift, getShifts, updateShift };
+/**
+ * @desc    Xóa ca làm việc
+ * @route   DELETE /api/v1/shifts/:id
+ */
+const deleteShift = async (req, res, next) => {
+  try {
+    const shift = await Shift.findByIdAndDelete(req.params.id);
+    if (!shift) {
+      const error = new Error('Không tìm thấy ca làm việc');
+      error.statusCode = 404;
+      throw error;
+    }
+    res.json({ success: true, message: 'Xóa ca làm việc thành công!' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createShift, getShifts, updateShift, deleteShift };
