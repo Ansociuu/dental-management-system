@@ -28,6 +28,7 @@ const AdminLayout = () => {
         { label: 'Danh sách lịch hẹn', path: '/admin/appointments' },
         { label: 'Đặt lịch mới', path: '/admin/appointments/book' },
         { label: 'Theo dõi & Điều phối', path: '/admin/appointments/monitor' },
+        { label: 'Gọi lại sau khám', path: '/admin/appointments/follow-ups' },
         { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules' }
       ]
     },

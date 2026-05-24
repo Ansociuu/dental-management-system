@@ -38,6 +38,14 @@ const appointmentSchema = new mongoose.Schema({
     default: 'PENDING' 
   },
   queueNumber: { type: Number },
+  followUpStatus: {
+    type: String,
+    enum: ['PENDING', 'CALLED', 'UNREACHABLE'],
+    default: 'PENDING'
+  },
+  followUpNote: { type: String },
+  followUpAt: { type: Date },
+  followUpBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   
   // Các trường lâm sàng cập nhật bởi Bác sĩ khi khám bệnh
   diagnosis: { type: String },

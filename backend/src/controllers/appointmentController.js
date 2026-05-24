@@ -19,6 +19,12 @@ const getDayRange = (dateInput) => {
   return { $gte: gte, $lte: lte };
 };
 
+const getPreviousDate = (dateInput) => {
+  const parsed = dateInput ? new Date(dateInput) : new Date();
+  parsed.setDate(parsed.getDate() - 1);
+  return parsed;
+};
+
 /**
  * @desc    Đăng ký lịch khám mới
  * @route   POST /api/v1/appointments
@@ -116,6 +122,115 @@ const monitorAppointments = async (req, res, next) => {
       .sort({ queueNumber: 1 });
 
     res.json({ success: true, data: appointments });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Lấy danh sách lịch đã khám xong cần gọi lại vào ngày hôm sau
+ * @route   GET /api/v1/appointments/follow-ups
+ * @query   date - ngày lễ tân cần gọi, status - PENDING/CALLED/UNREACHABLE/ALL
+ */
+const getFollowUpAppointments = async (req, res, next) => {
+  try {
+    const followUpDate = req.query.date || new Date().toISOString().split('T')[0];
+    const appointmentDate = getPreviousDate(followUpDate);
+    const followUpStatus = req.query.status || 'PENDING';
+
+    const filter = {
+      status: 'COMPLETED',
+      date: getDayRange(appointmentDate)
+    };
+
+    if (followUpStatus !== 'ALL') {
+      const validStatuses = ['PENDING', 'CALLED', 'UNREACHABLE'];
+      if (!validStatuses.includes(followUpStatus)) {
+        const error = new Error(`Trạng thái gọi lại không hợp lệ. Chỉ chấp nhận: ${validStatuses.join(', ')}, ALL`);
+        error.statusCode = 400;
+        throw error;
+      }
+      filter.followUpStatus = followUpStatus === 'PENDING'
+        ? { $in: ['PENDING', null] }
+        : followUpStatus;
+    }
+
+    const appointments = await Appointment.find(filter)
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('doctorId', 'fullName specialization')
+      .populate('shiftId', 'name startTime endTime')
+      .populate('serviceId', 'name price')
+      .populate('followUpBy', 'fullName role')
+      .sort({ date: 1, queueNumber: 1 });
+
+    res.json({ success: true, data: appointments });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Cập nhật trạng thái gọi lại sau khám
+ * @route   PATCH /api/v1/appointments/:id/follow-up
+ * @body    { followUpStatus, followUpNote }
+ */
+const updateAppointmentFollowUp = async (req, res, next) => {
+  try {
+    const { followUpStatus, followUpNote } = req.body;
+    const validStatuses = ['CALLED', 'UNREACHABLE'];
+
+    if (followUpStatus !== undefined && !validStatuses.includes(followUpStatus)) {
+      const error = new Error(`Trạng thái gọi lại không hợp lệ. Chỉ chấp nhận: ${validStatuses.join(', ')}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      const error = new Error('Không tìm thấy lịch khám');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (appointment.status !== 'COMPLETED') {
+      const error = new Error('Chỉ cập nhật gọi lại cho lịch khám đã hoàn thành');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const currentFollowUpStatus = appointment.followUpStatus || 'PENDING';
+
+    if (followUpStatus && currentFollowUpStatus === 'CALLED' && followUpStatus !== 'CALLED') {
+      const error = new Error('Lịch đã gọi thành công không thể chuyển về trạng thái khác');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (followUpStatus && currentFollowUpStatus === 'UNREACHABLE' && followUpStatus === 'UNREACHABLE') {
+      appointment.followUpAt = new Date();
+      appointment.followUpBy = req.user._id;
+    }
+
+    if (followUpStatus && (currentFollowUpStatus === 'PENDING' || currentFollowUpStatus === 'UNREACHABLE')) {
+      appointment.followUpStatus = followUpStatus;
+      appointment.followUpAt = new Date();
+      appointment.followUpBy = req.user._id;
+    }
+
+    if (followUpNote !== undefined) {
+      appointment.followUpNote = String(followUpNote).trim();
+    }
+
+    await appointment.save();
+
+    const populated = await Appointment.findById(appointment._id)
+      .populate('patientId', 'fullName phone patientCode dob gender address')
+      .populate('doctorId', 'fullName specialization')
+      .populate('shiftId', 'name startTime endTime')
+      .populate('serviceId', 'name price')
+      .populate('followUpBy', 'fullName role');
+
+    res.json({ success: true, message: 'Cập nhật gọi lại sau khám thành công', data: populated });
   } catch (error) {
     next(error);
   }
@@ -277,8 +392,10 @@ const getAppointmentById = async (req, res, next) => {
 module.exports = { 
   createAppointment, 
   monitorAppointments, 
+  getFollowUpAppointments,
   getAppointments, 
   updateAppointmentStatus,
+  updateAppointmentFollowUp,
   getDoctorTodayAppointments,
   examineAppointment,
   getAppointmentById

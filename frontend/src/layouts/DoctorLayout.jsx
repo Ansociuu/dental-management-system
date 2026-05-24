@@ -8,6 +8,7 @@ const DoctorLayout = () => {
 
   const menuItems = [
     { icon: 'dashboard', label: 'Bảng điều khiển', path: '/doctor/dashboard' },
+    { icon: 'badge', label: 'Hồ sơ bác sĩ', path: '/doctor/profile' },
     { icon: 'person_search', label: 'Hồ sơ bệnh án', path: '/doctor/records' },
     { icon: 'calendar_month', label: 'Đăng ký lịch trực', path: '/doctor/duty-schedules' },
   ];

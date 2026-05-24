@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
+import ReceptionistLayout from './layouts/ReceptionistLayout';
 import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import CustomerManagement from './pages/admin/CustomerManagement';
@@ -20,6 +21,7 @@ import ShiftSettings from './pages/admin/ShiftSettings';
 import DoctorDutySchedule from './pages/admin/DoctorDutySchedule';
 import AppointmentBooking from './pages/admin/AppointmentBooking';
 import AppointmentMonitor from './pages/admin/AppointmentMonitor';
+import FollowUpCalls from './pages/admin/FollowUpCalls';
 
 // Imports phân hệ Bác sĩ
 import DoctorLayout from './layouts/DoctorLayout';
@@ -27,6 +29,8 @@ import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import DoctorAppointmentDetail from './pages/doctor/DoctorAppointmentDetail';
 import DoctorPatientRecord from './pages/doctor/DoctorPatientRecord';
 import DoctorSelfDutySchedule from './pages/doctor/DoctorDutySchedule';
+import DoctorSelfProfile from './pages/doctor/DoctorProfile';
+import ReceptionistDutyScheduleView from './pages/receptionist/DutyScheduleView';
 
 // Component bảo vệ các tuyến đường theo vai trò
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -52,6 +56,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (user.role === 'DOCTOR') {
       return <Navigate to="/doctor/dashboard" replace />;
     }
+    if (user.role === 'RECEPTIONIST') {
+      return <Navigate to="/receptionist/dashboard" replace />;
+    }
     return <Navigate to="/admin/dashboard" replace />;
   }
 
@@ -64,6 +71,7 @@ const DefaultRedirect = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'DOCTOR') return <Navigate to="/doctor/dashboard" replace />;
+  if (user.role === 'RECEPTIONIST') return <Navigate to="/receptionist/dashboard" replace />;
   return <Navigate to="/admin/dashboard" replace />;
 };
 
@@ -79,7 +87,7 @@ function App() {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTIONIST']}>
+              <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -90,6 +98,7 @@ function App() {
             <Route path="appointments" element={<AppointmentManagement />} />
             <Route path="appointments/book" element={<AppointmentBooking />} />
             <Route path="appointments/monitor" element={<AppointmentMonitor />} />
+            <Route path="appointments/follow-ups" element={<FollowUpCalls />} />
             <Route path="appointments/duty-schedules" element={<DoctorDutySchedule />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="staff" element={<UserManagement />} />
@@ -106,7 +115,25 @@ function App() {
             <Route path="doctor-profile/:id" element={<DoctorProfile />} />
           </Route>
 
-          {/* Tuyến đường Bác sĩ (Doctor Flow) */}
+          {/* Receptionist Routes */}
+          <Route
+            path="/receptionist"
+            element={
+              <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                <ReceptionistLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="appointments/book" element={<AppointmentBooking />} />
+            <Route path="appointments/monitor" element={<AppointmentMonitor />} />
+            <Route path="follow-ups" element={<FollowUpCalls />} />
+            <Route path="patients" element={<CustomerManagement />} />
+            <Route path="duty-schedules" element={<ReceptionistDutyScheduleView />} />
+          </Route>
+
+          {/* Doctor Routes */}
           <Route 
             path="/doctor" 
             element={
@@ -120,6 +147,7 @@ function App() {
             <Route path="appointments/:id" element={<DoctorAppointmentDetail />} />
             <Route path="records" element={<DoctorPatientRecord />} />
             <Route path="duty-schedules" element={<DoctorSelfDutySchedule />} />
+            <Route path="profile" element={<DoctorSelfProfile />} />
           </Route>
 
           {/* Catch all redirect */}

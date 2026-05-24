@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { monitorAppointments, updateAppointmentStatus } from '../../services/appointmentService';
 import { getShifts } from '../../services/shiftService';
 import apiFetch from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const AppointmentMonitor = () => {
+  const { user } = useAuth();
+  const canCompleteAppointment = user?.role === 'ADMIN';
   const [appointments, setAppointments] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -214,7 +217,7 @@ const AppointmentMonitor = () => {
                         {apt.status === 'CONFIRMED' && (
                           <button onClick={() => handleStatusChange(apt._id, 'CHECKED_IN')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">Check-in</button>
                         )}
-                        {apt.status === 'CHECKED_IN' && (
+                        {canCompleteAppointment && apt.status === 'CHECKED_IN' && (
                           <button onClick={() => handleStatusChange(apt._id, 'COMPLETED')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm">Hoàn thành</button>
                         )}
                         {['PENDING', 'CONFIRMED', 'CHECKED_IN'].includes(apt.status) && (

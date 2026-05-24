@@ -11,3 +11,8 @@ export const registerUser = (userData) => apiFetch('/auth/register', {
 });
 
 export const getMe = () => apiFetch('/auth/me');
+
+export const updateMyDoctorProfile = (data) => apiFetch('/auth/me/profile', {
+  method: 'PATCH',
+  body: JSON.stringify(data)
+});

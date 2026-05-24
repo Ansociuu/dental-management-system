@@ -101,3 +101,75 @@ exports.getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+// PATCH /api/v1/auth/me/profile
+exports.updateMyDoctorProfile = async (req, res, next) => {
+  try {
+    const {
+      fullName,
+      email,
+      phone,
+      dob,
+      gender,
+      avatar,
+      specialties,
+      licenseNumber,
+      experience
+    } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (user.role !== 'DOCTOR') {
+      return res.status(403).json({ success: false, message: 'Chỉ bác sĩ mới được cập nhật hồ sơ bác sĩ của chính mình' });
+    }
+
+    if (fullName !== undefined && !fullName.trim()) {
+      return res.status(400).json({ success: false, message: 'Họ và tên là bắt buộc' });
+    }
+
+    if (email !== undefined && !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Email là bắt buộc' });
+    }
+
+    if (phone !== undefined && !phone.trim()) {
+      return res.status(400).json({ success: false, message: 'Số điện thoại là bắt buộc' });
+    }
+
+    if (email && email !== user.email) {
+      const existing = await User.findOne({ email, _id: { $ne: user._id } });
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'Email đã tồn tại' });
+      }
+    }
+
+    if (licenseNumber && licenseNumber !== user.licenseNumber) {
+      const licDup = await User.findOne({ licenseNumber, _id: { $ne: user._id } });
+      if (licDup) {
+        return res.status(400).json({ success: false, message: `Số chứng chỉ hành nghề đã tồn tại (${licDup.fullName})` });
+      }
+    }
+
+    if (fullName !== undefined) user.fullName = fullName.trim();
+    if (email !== undefined) user.email = email.trim();
+    if (phone !== undefined) user.phone = phone.trim();
+    if (dob !== undefined) user.dob = dob || null;
+    if (gender !== undefined) user.gender = gender;
+    if (avatar !== undefined) user.avatar = avatar;
+    if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
+    if (experience !== undefined) user.experience = experience;
+    if (specialties !== undefined) {
+      user.specialties = Array.isArray(specialties)
+        ? specialties.map(item => String(item).trim()).filter(Boolean)
+        : [];
+      user.specialization = user.specialties.join(', ');
+    }
+
+    await user.save();
+    res.json({ success: true, message: 'Cập nhật hồ sơ bác sĩ thành công!', data: user });
+  } catch (error) {
+    next(error);
+  }
+};

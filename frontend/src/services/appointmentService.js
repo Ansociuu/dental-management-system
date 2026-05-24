@@ -8,8 +8,13 @@ export const monitorAppointments = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return apiFetch(`/appointments/monitor${query ? `?${query}` : ''}`);
 };
+export const getFollowUpAppointments = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return apiFetch(`/appointments/follow-ups${query ? `?${query}` : ''}`);
+};
 export const createAppointment = (data) => apiFetch('/appointments', { method: 'POST', body: JSON.stringify(data) });
 export const updateAppointmentStatus = (id, status) => apiFetch(`/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+export const updateAppointmentFollowUp = (id, data) => apiFetch(`/appointments/${id}/follow-up`, { method: 'PATCH', body: JSON.stringify(data) });
 export const getDoctorTodayAppointments = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return apiFetch(`/appointments/doctor-today${query ? `?${query}` : ''}`);
