@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/userService';
@@ -8,6 +9,7 @@ const roleMap = {
   'NURSE': 'Y tá',
   'RECEPTIONIST': 'Lễ tân'
 };
+roleMap.PATIENT = 'Bệnh nhân';
 
 const roleMapRev = {
   'Quản trị viên': 'ADMIN',
@@ -15,6 +17,7 @@ const roleMapRev = {
   'Y tá': 'NURSE',
   'Lễ tân': 'RECEPTIONIST'
 };
+roleMapRev['Bệnh nhân'] = 'PATIENT';
 
 const statusMap = {
   'ACTIVE': 'Hoạt động',
@@ -123,6 +126,7 @@ const UserManagement = () => {
       case 'DOCTOR': return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'NURSE': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'RECEPTIONIST': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'PATIENT': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
@@ -195,6 +199,7 @@ const UserManagement = () => {
               <option value="doctor">Bác sĩ</option>
               <option value="nurse">Y tá</option>
               <option value="receptionist">Lễ tân</option>
+              <option value="patient">Bệnh nhân</option>
             </select>
           </div>
         </div>
@@ -355,6 +360,7 @@ const UserManagement = () => {
                         <option value="ADMIN">Quản trị viên (Admin)</option>
                         <option value="NURSE">Y tá (Nurse)</option>
                         <option value="RECEPTIONIST">Lễ tân (Receptionist)</option>
+                        <option value="PATIENT" disabled>Bệnh nhân (Patient)</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">

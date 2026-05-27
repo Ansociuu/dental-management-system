@@ -4,7 +4,7 @@ const { PERMISSION_MODULES, PERMISSION_ACTIONS, normalizePermissions } = require
 const rolePermissionSchema = new mongoose.Schema({
   role: {
     type: String,
-    enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST'],
+    enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST', 'PATIENT'],
     required: true,
     unique: true
   },

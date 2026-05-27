@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext } from 'react';
 import { loginUser, getMe } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -10,6 +11,13 @@ export const AuthProvider = ({ children }) => {
   });
   const [token, setToken] = useState(() => localStorage.getItem('mec_token'));
   const [loading, setLoading] = useState(true);
+
+  const logout = () => {
+    localStorage.removeItem('mec_token');
+    localStorage.removeItem('mec_user');
+    setToken(null);
+    setUser(null);
+  };
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -42,20 +50,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('mec_token');
-    localStorage.removeItem('mec_user');
-    setToken(null);
-    setUser(null);
-  };
-
   const updateUser = (nextUser) => {
     setUser(nextUser);
     localStorage.setItem('mec_user', JSON.stringify(nextUser));
   };
 
+  const setSession = (nextToken, nextUser) => {
+    localStorage.setItem('mec_token', nextToken);
+    localStorage.setItem('mec_user', JSON.stringify(nextUser));
+    setToken(nextToken);
+    setUser(nextUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser, setSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -64,7 +64,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     services: readOnly,
     settings: readOnly,
     doctorDuty: readOnly
-  })
+  }),
+  PATIENT: makePermissions({})
 };
 
 const normalizePermissions = (permissions = {}) => {

@@ -43,6 +43,11 @@ exports.createUser = async (req, res, next) => {
   try {
     const { fullName, email, phone, role, specialization, status, password,
             dob, gender, licenseNumber, specialties, experience, avatar } = req.body;
+    const normalizedRole = role ? role.toUpperCase() : 'DOCTOR';
+
+    if (normalizedRole === 'PATIENT') {
+      return res.status(400).json({ success: false, message: 'Tai khoan benh nhan phai dang ky qua cong benh nhan' });
+    }
     
     // Check if email already exists
     const existing = await User.findOne({ email });
@@ -63,7 +68,7 @@ exports.createUser = async (req, res, next) => {
       email,
       phone,
       password: password || '123456', // Mật khẩu mặc định
-      role: role ? role.toUpperCase() : 'DOCTOR',
+      role: normalizedRole,
       specialization,
       status: status ? status.toUpperCase() : 'ACTIVE',
       dob: dob || undefined,
@@ -110,7 +115,13 @@ exports.updateUser = async (req, res, next) => {
 
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
-    if (role) user.role = role.toUpperCase();
+    if (role) {
+      const normalizedRole = role.toUpperCase();
+      if (normalizedRole === 'PATIENT' && !user.patientId) {
+        return res.status(400).json({ success: false, message: 'Khong the chuyen tai khoan noi bo thanh benh nhan' });
+      }
+      user.role = normalizedRole;
+    }
     if (specialization !== undefined) user.specialization = specialization;
     if (status) user.status = status.toUpperCase();
     if (dob !== undefined) user.dob = dob || null;

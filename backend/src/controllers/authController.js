@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Patient = require('../models/Patient');
 const { getPermissionsForRole } = require('../services/permissionService');
 
 // Tạo JWT token
@@ -9,14 +10,87 @@ const generateToken = (id) => {
   });
 };
 
+const getDateKey = (dateInput) => {
+  if (!dateInput) return '';
+  return new Date(dateInput).toISOString().slice(0, 10);
+};
+
+const generatePatientCode = async () => {
+  const patients = await Patient.find({ patientCode: /^MEC-PT-\d+$/ }, 'patientCode').lean();
+  const maxNumber = patients.reduce((max, patient) => {
+    const current = Number.parseInt(patient.patientCode.split('-').pop(), 10);
+    return Number.isFinite(current) && current > max ? current : max;
+  }, 0);
+
+  return `MEC-PT-${String(maxNumber + 1).padStart(4, '0')}`;
+};
+
+const createPatientWithUniqueCode = async (patientData) => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await Patient.create({
+        ...patientData,
+        patientCode: await generatePatientCode()
+      });
+    } catch (error) {
+      if (error.code !== 11000 || !error.keyPattern?.patientCode) {
+        throw error;
+      }
+    }
+  }
+
+  const error = new Error('Không thể sinh mã bệnh nhân duy nhất. Vui lòng thử lại.');
+  error.statusCode = 500;
+  throw error;
+};
+
+const buildAuthUserPayload = async (user) => {
+  const permissions = await getPermissionsForRole(user.role);
+  return {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    permissions,
+    patientId: user.patientId,
+    specialization: user.specialization,
+    status: user.status
+  };
+};
+
 // POST /api/v1/auth/register
 exports.register = async (req, res, next) => {
   try {
-    const { fullName, email, phone, password } = req.body;
+    const { fullName, email, phone, password, dob, gender, address } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Email đã được đăng ký trong hệ thống' });
+    }
+
+    if (!fullName || !email || !phone || !password || !dob || !gender) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ thông tin đăng ký' });
+    }
+
+    let patient = await Patient.findOne({ phone });
+    if (patient) {
+      if (getDateKey(patient.dob) !== getDateKey(dob)) {
+        return res.status(400).json({ success: false, message: 'Số điện thoại đã có hồ sơ nhưng ngày sinh không khớp' });
+      }
+
+      const linkedUser = await User.findOne({ patientId: patient._id, role: 'PATIENT' });
+      if (linkedUser) {
+        return res.status(400).json({ success: false, message: 'Hồ sơ bệnh nhân này đã có tài khoản đăng nhập' });
+      }
+    } else {
+      patient = await createPatientWithUniqueCode({
+        fullName,
+        phone,
+        dob,
+        gender,
+        address
+      });
     }
 
     const user = await User.create({
@@ -24,25 +98,17 @@ exports.register = async (req, res, next) => {
       email,
       phone,
       password,
-      role: 'RECEPTIONIST'
+      role: 'PATIENT',
+      patientId: patient._id
     });
 
     const token = generateToken(user._id);
-    const permissions = await getPermissionsForRole(user.role);
+    const data = await buildAuthUserPayload(user);
 
     res.status(201).json({
       success: true,
       token,
-      data: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        permissions,
-        specialization: user.specialization,
-        status: user.status
-      }
+      data
     });
   } catch (error) {
     next(error);
@@ -75,21 +141,12 @@ exports.login = async (req, res, next) => {
     }
 
     const token = generateToken(user._id);
-    const permissions = await getPermissionsForRole(user.role);
+    const data = await buildAuthUserPayload(user);
 
     res.json({
       success: true,
       token,
-      data: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        permissions,
-        specialization: user.specialization,
-        status: user.status
-      }
+      data
     });
   } catch (error) {
     next(error);
@@ -99,7 +156,7 @@ exports.login = async (req, res, next) => {
 // GET /api/v1/auth/me
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).populate('patientId', 'fullName phone patientCode dob gender address');
     const userObject = user.toObject();
     userObject.permissions = await getPermissionsForRole(user.role);
     res.json({ success: true, data: userObject });

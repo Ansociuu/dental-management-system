@@ -12,9 +12,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: [true, 'Mật khẩu là bắt buộc'], minlength: 6, select: false },
   role: { 
     type: String, 
-    enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST'], 
+    enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST', 'PATIENT'], 
     default: 'DOCTOR' 
   },
+  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient' },
   specialization: { type: String }, // Chuyên môn tóm tắt (legacy, dành cho Bác sĩ)
   // === Trường mở rộng cho hồ sơ Bác sĩ ===
   dob: { type: Date },                                     // Ngày sinh

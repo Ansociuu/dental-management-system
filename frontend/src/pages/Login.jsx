@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -25,6 +25,8 @@ const Login = () => {
       // Chuyển hướng người dùng dựa trên vai trò hoặc mặc định về dashboard tương ứng
       if (user.role === 'DOCTOR') {
         navigate('/doctor');
+      } else if (user.role === 'PATIENT') {
+        navigate('/patient');
       } else if (user.role === 'ADMIN' || user.role === 'RECEPTIONIST') {
         navigate('/admin');
       } else {
@@ -111,6 +113,9 @@ const Login = () => {
         </form>
 
         <div className="text-center mt-6">
+          <Link to="/register" className="block text-sm font-bold text-blue-300 hover:text-blue-200 transition-colors mb-3">
+            Đăng ký tài khoản bệnh nhân
+          </Link>
           <p className="text-xs text-slate-400 font-semibold">
             Tài khoản dùng thử mặc định: <span className="text-slate-200">admin@mec.vn</span> / <span className="text-slate-200">123456</span>
           </p>

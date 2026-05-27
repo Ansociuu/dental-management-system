@@ -2,8 +2,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import AdminLayout from './layouts/AdminLayout';
 import ReceptionistLayout from './layouts/ReceptionistLayout';
+import PatientLayout from './layouts/PatientLayout';
 import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import CustomerManagement from './pages/admin/CustomerManagement';
@@ -34,6 +36,11 @@ import DoctorPatientRecord from './pages/doctor/DoctorPatientRecord';
 import DoctorSelfDutySchedule from './pages/doctor/DoctorDutySchedule';
 import DoctorSelfProfile from './pages/doctor/DoctorProfile';
 import ReceptionistDutyScheduleView from './pages/receptionist/DutyScheduleView';
+import PatientDashboard from './pages/patient/PatientDashboard';
+import PatientAppointments from './pages/patient/PatientAppointments';
+import PatientBooking from './pages/patient/PatientBooking';
+import PatientRecords from './pages/patient/PatientRecords';
+import PatientInvoices from './pages/patient/PatientInvoices';
 
 // Component bảo vệ các tuyến đường theo vai trò
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -58,6 +65,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     // Điều hướng ngược lại nếu không khớp phân quyền
     if (user.role === 'DOCTOR') {
       return <Navigate to="/doctor/dashboard" replace />;
+    }
+    if (user.role === 'PATIENT') {
+      return <Navigate to="/patient/dashboard" replace />;
     }
     if (user.role === 'RECEPTIONIST') {
       return <Navigate to="/receptionist/dashboard" replace />;
@@ -84,6 +94,7 @@ const DefaultRedirect = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'DOCTOR') return <Navigate to="/doctor/dashboard" replace />;
+  if (user.role === 'PATIENT') return <Navigate to="/patient/dashboard" replace />;
   if (user.role === 'RECEPTIONIST') return <Navigate to="/receptionist/dashboard" replace />;
   return <Navigate to="/admin/dashboard" replace />;
 };
@@ -95,6 +106,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Admin Routes */}
           <Route 
@@ -164,6 +176,22 @@ function App() {
             <Route path="records" element={<PermissionRoute module="records"><DoctorPatientRecord /></PermissionRoute>} />
             <Route path="duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorSelfDutySchedule /></PermissionRoute>} />
             <Route path="profile" element={<DoctorSelfProfile />} />
+          </Route>
+
+          <Route
+            path="/patient"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <PatientLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<PatientDashboard />} />
+            <Route path="appointments" element={<PatientAppointments />} />
+            <Route path="book" element={<PatientBooking />} />
+            <Route path="records" element={<PatientRecords />} />
+            <Route path="invoices" element={<PatientInvoices />} />
           </Route>
 
           {/* Catch all redirect */}

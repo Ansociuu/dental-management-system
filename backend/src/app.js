@@ -17,6 +17,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const permissionRoutes = require("./routes/permissionRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const patientPortalRoutes = require("./routes/patientPortalRoutes");
 
 
 const app = express();
@@ -46,6 +47,7 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/invoices", invoiceRoutes);
 app.use("/api/v1/permissions", permissionRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/patient-portal", patientPortalRoutes);
 
 
 // Middleware xử lý lỗi tập trung (phải đặt sau tất cả routes)
