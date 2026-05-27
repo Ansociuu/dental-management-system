@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
@@ -22,6 +21,10 @@ import DoctorDutySchedule from './pages/admin/DoctorDutySchedule';
 import AppointmentBooking from './pages/admin/AppointmentBooking';
 import AppointmentMonitor from './pages/admin/AppointmentMonitor';
 import FollowUpCalls from './pages/admin/FollowUpCalls';
+import PaymentManagement from './pages/admin/PaymentManagement';
+import PatientRecord from './pages/admin/PatientRecord';
+import AccessDenied from './components/AccessDenied';
+import { hasPermission } from './utils/permissions';
 
 // Imports phân hệ Bác sĩ
 import DoctorLayout from './layouts/DoctorLayout';
@@ -65,6 +68,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const PermissionRoute = ({ children, module, action = 'view' }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!hasPermission(user, module, action)) return <AccessDenied />;
+
+  return children;
+};
+
 // Điều hướng mặc định dựa trên vai trò
 const DefaultRedirect = () => {
   const { user, loading } = useAuth();
@@ -93,26 +106,28 @@ function App() {
             }
           >
             {/* Default admin route redirects to Dashboard */}
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="appointments" element={<AppointmentManagement />} />
-            <Route path="appointments/book" element={<AppointmentBooking />} />
-            <Route path="appointments/monitor" element={<AppointmentMonitor />} />
-            <Route path="appointments/follow-ups" element={<FollowUpCalls />} />
-            <Route path="appointments/duty-schedules" element={<DoctorDutySchedule />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="staff" element={<UserManagement />} />
-            <Route path="customers" element={<CustomerManagement />} />
-            <Route path="services" element={<ServiceManagement />} />
-            <Route path="roles" element={<RoleManagement />} />
-            <Route path="reports/revenue" element={<RevenueReport />} />
-            <Route path="reports/doctor-performance" element={<DoctorPerformanceReport />} />
-            <Route path="reports/patients-services" element={<PatientServiceReport />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="shifts" element={<ShiftSettings />} />
-            <Route path="holidays" element={<HolidaySettings />} />
-            <Route path="doctor-profile/new" element={<DoctorProfile />} />
-            <Route path="doctor-profile/:id" element={<DoctorProfile />} />
+            <Route index element={<PermissionRoute module="dashboard"><Dashboard /></PermissionRoute>} />
+            <Route path="dashboard" element={<PermissionRoute module="dashboard"><Dashboard /></PermissionRoute>} />
+            <Route path="appointments" element={<PermissionRoute module="appointments"><AppointmentManagement /></PermissionRoute>} />
+            <Route path="appointments/book" element={<PermissionRoute module="appointments" action="create"><AppointmentBooking /></PermissionRoute>} />
+            <Route path="appointments/monitor" element={<PermissionRoute module="appointments"><AppointmentMonitor /></PermissionRoute>} />
+            <Route path="appointments/follow-ups" element={<PermissionRoute module="followUps"><FollowUpCalls /></PermissionRoute>} />
+            <Route path="appointments/duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorDutySchedule /></PermissionRoute>} />
+            <Route path="payments" element={<PermissionRoute module="payments"><PaymentManagement /></PermissionRoute>} />
+            <Route path="users" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
+            <Route path="staff" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
+            <Route path="customers" element={<PermissionRoute module="patients"><CustomerManagement /></PermissionRoute>} />
+            <Route path="records" element={<PermissionRoute module="records"><PatientRecord /></PermissionRoute>} />
+            <Route path="services" element={<PermissionRoute module="services"><ServiceManagement /></PermissionRoute>} />
+            <Route path="roles" element={<PermissionRoute module="roles"><RoleManagement /></PermissionRoute>} />
+            <Route path="reports/revenue" element={<PermissionRoute module="reports"><RevenueReport /></PermissionRoute>} />
+            <Route path="reports/doctor-performance" element={<PermissionRoute module="reports"><DoctorPerformanceReport /></PermissionRoute>} />
+            <Route path="reports/patients-services" element={<PermissionRoute module="reports"><PatientServiceReport /></PermissionRoute>} />
+            <Route path="settings" element={<PermissionRoute module="settings"><Settings /></PermissionRoute>} />
+            <Route path="shifts" element={<PermissionRoute module="settings"><ShiftSettings /></PermissionRoute>} />
+            <Route path="holidays" element={<PermissionRoute module="settings"><HolidaySettings /></PermissionRoute>} />
+            <Route path="doctor-profile/new" element={<PermissionRoute module="users" action="create"><DoctorProfile /></PermissionRoute>} />
+            <Route path="doctor-profile/:id" element={<PermissionRoute module="users" action="update"><DoctorProfile /></PermissionRoute>} />
           </Route>
 
           {/* Receptionist Routes */}
@@ -125,12 +140,13 @@ function App() {
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="appointments/book" element={<AppointmentBooking />} />
-            <Route path="appointments/monitor" element={<AppointmentMonitor />} />
-            <Route path="follow-ups" element={<FollowUpCalls />} />
-            <Route path="patients" element={<CustomerManagement />} />
-            <Route path="duty-schedules" element={<ReceptionistDutyScheduleView />} />
+            <Route path="dashboard" element={<PermissionRoute module="dashboard"><Dashboard /></PermissionRoute>} />
+            <Route path="appointments/book" element={<PermissionRoute module="appointments" action="create"><AppointmentBooking /></PermissionRoute>} />
+            <Route path="appointments/monitor" element={<PermissionRoute module="appointments"><AppointmentMonitor /></PermissionRoute>} />
+            <Route path="payments" element={<PermissionRoute module="payments"><PaymentManagement /></PermissionRoute>} />
+            <Route path="follow-ups" element={<PermissionRoute module="followUps"><FollowUpCalls /></PermissionRoute>} />
+            <Route path="patients" element={<PermissionRoute module="patients"><CustomerManagement /></PermissionRoute>} />
+            <Route path="duty-schedules" element={<PermissionRoute module="doctorDuty"><ReceptionistDutyScheduleView /></PermissionRoute>} />
           </Route>
 
           {/* Doctor Routes */}
@@ -143,10 +159,10 @@ function App() {
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DoctorDashboard />} />
-            <Route path="appointments/:id" element={<DoctorAppointmentDetail />} />
-            <Route path="records" element={<DoctorPatientRecord />} />
-            <Route path="duty-schedules" element={<DoctorSelfDutySchedule />} />
+            <Route path="dashboard" element={<PermissionRoute module="dashboard"><DoctorDashboard /></PermissionRoute>} />
+            <Route path="appointments/:id" element={<PermissionRoute module="appointments"><DoctorAppointmentDetail /></PermissionRoute>} />
+            <Route path="records" element={<PermissionRoute module="records"><DoctorPatientRecord /></PermissionRoute>} />
+            <Route path="duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorSelfDutySchedule /></PermissionRoute>} />
             <Route path="profile" element={<DoctorSelfProfile />} />
           </Route>
 

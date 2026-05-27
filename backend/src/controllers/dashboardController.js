@@ -1,6 +1,6 @@
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
-const Service = require('../models/Service');
+const Invoice = require('../models/Invoice');
 
 // Helper to construct a robust 24-hour date range ignoring timezone shifts
 const getDayRange = (dateInput) => {
@@ -40,13 +40,23 @@ const getDashboardStats = async (req, res, next) => {
       status: 'CHECKED_IN'
     });
 
-    // 4. Doanh thu trong ngày (Tổng tiền các ca khám COMPLETED hôm nay)
-    const todayCompleted = await Appointment.find({
-      date: getDayRange(today),
-      status: 'COMPLETED'
-    }).populate('serviceId');
-    
-    const todayRevenue = todayCompleted.reduce((sum, apt) => sum + (apt.serviceId?.price || 0), 0);
+    // 4. Doanh thu trong ngày chỉ tính các hóa đơn đã thanh toán
+    const todayRevenueAgg = await Invoice.aggregate([
+      {
+        $match: {
+          paidAt: getDayRange(today),
+          paymentStatus: 'PAID'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
+    const todayRevenue = todayRevenueAgg[0]?.total || 0;
 
     // 5. Danh sách lịch hẹn hôm nay (Recent Table)
     const recentAppointments = await Appointment.find({

@@ -59,7 +59,7 @@ const Dashboard = () => {
     {
       title: 'Doanh thu trong ngày',
       value: loading ? '...' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(dashboardData.todayRevenue),
-      trend: 'Từ ca khám hoàn thành',
+      trend: 'Từ phiếu thu đã thanh toán',
       isPositive: true,
       icon: 'payments',
       color: 'emerald'

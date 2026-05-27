@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect } from 'react';
 import { createAppointment, getAppointments } from '../../services/appointmentService';
 import { getShifts } from '../../services/shiftService';
 import { getPatients } from '../../services/patientService';
 import { getDutySchedules } from '../../services/dutyService';
 import { getServices } from '../../services/serviceService';
+
+const uniqueById = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    if (!item?._id || seen.has(item._id)) return false;
+    seen.add(item._id);
+    return true;
+  });
+};
 
 const AppointmentBooking = () => {
   const [shifts, setShifts] = useState([]);
@@ -51,7 +61,7 @@ const AppointmentBooking = () => {
         ]);
         setMonthDuties(dutiesRes.data || []);
         setMonthAppointments(aptsRes.data || []);
-      } catch (err) { /* silent */ }
+      } catch { /* silent */ }
       finally { setCalLoading(false); }
     };
     fetchMonthData();
@@ -63,7 +73,7 @@ const AppointmentBooking = () => {
       const fetchDoctors = async () => {
         try {
           const res = await getDutySchedules({ date: form.date, shiftId: form.shiftId });
-          setDoctors(res.data.map(d => d.doctorId).filter(Boolean));
+          setDoctors(uniqueById((res.data || []).map(d => d.doctorId).filter(Boolean)));
         } catch { setDoctors([]); }
       };
       fetchDoctors();
@@ -327,7 +337,7 @@ const AppointmentBooking = () => {
                             const selected = isSlotSelected(cell.date, group.shift._id, duty.doctorId?._id);
 
                             return (
-                              <button key={duty._id} type="button" disabled={isPast || isFull}
+                              <button key={`${duty._id || `${group.shift._id}-${duty.doctorId?._id}`}-${cell.date.toISOString()}`} type="button" disabled={isPast || isFull}
                                 onClick={(e) => { e.stopPropagation(); if (!isPast && !isFull) handleSlotClick(cell.date, group.shift._id, duty.doctorId?._id); }}
                                 className={`w-full text-left px-1.5 py-1 rounded text-[9px] font-bold truncate border transition-all ${
                                   selected ? 'ring-2 ring-blue-500 bg-blue-100 border-blue-300 text-blue-800 scale-[1.02]'
@@ -419,7 +429,7 @@ const AppointmentBooking = () => {
                             const selected = isSlotSelected(selectedDay.date, group.shift?._id, duty.doctorId?._id);
 
                             return (
-                              <div key={duty._id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                              <div key={duty._id || `${group.shift?._id}-${duty.doctorId?._id}`} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-50 text-blue-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     {duty.doctorId?.fullName?.split(' ').map(n => n[0]).join('').slice(-2) || 'BS'}

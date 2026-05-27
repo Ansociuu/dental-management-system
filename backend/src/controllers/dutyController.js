@@ -25,6 +25,12 @@ const getDayRange = (dateInput) => {
 const createDutySchedule = async (req, res, next) => {
   try {
     const { doctorId, date, shiftId } = req.body;
+    if (req.user?.role === 'DOCTOR' && doctorId !== req.user._id.toString()) {
+      const error = new Error('Bác sĩ chỉ được đăng ký lịch trực cho chính mình');
+      error.statusCode = 403;
+      throw error;
+    }
+
     const dutyDate = new Date(date);
 
     // Ràng buộc: Không được đăng ký trực vào ngày nghỉ ACTIVE
@@ -69,6 +75,7 @@ const getDutySchedules = async (req, res, next) => {
   try {
     const filter = { status: 'ACTIVE' };
     if (req.query.doctorId) filter.doctorId = req.query.doctorId;
+    if (req.query.shiftId) filter.shiftId = req.query.shiftId;
     if (req.query.startDate && req.query.endDate) {
       filter.date = { $gte: new Date(req.query.startDate), $lte: new Date(req.query.endDate) };
     } else if (req.query.date) {
@@ -92,12 +99,20 @@ const getDutySchedules = async (req, res, next) => {
  */
 const deleteDutySchedule = async (req, res, next) => {
   try {
-    const duty = await DutySchedule.findByIdAndUpdate(req.params.id, { status: 'CANCELLED' }, { new: true });
-    if (!duty) {
+    const existingDuty = await DutySchedule.findById(req.params.id);
+    if (!existingDuty) {
       const error = new Error('Không tìm thấy lịch trực');
       error.statusCode = 404;
       throw error;
     }
+
+    if (req.user?.role === 'DOCTOR' && existingDuty.doctorId.toString() !== req.user._id.toString()) {
+      const error = new Error('Bác sĩ chỉ được hủy lịch trực của chính mình');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const duty = await DutySchedule.findByIdAndUpdate(req.params.id, { status: 'CANCELLED' }, { new: true });
     res.json({ success: true, message: 'Đã hủy lịch trực thành công' });
   } catch (error) {
     next(error);

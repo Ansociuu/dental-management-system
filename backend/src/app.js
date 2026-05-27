@@ -14,6 +14,9 @@ const userRoutes = require("./routes/userRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const authRoutes = require("./routes/authRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const invoiceRoutes = require("./routes/invoiceRoutes");
+const permissionRoutes = require("./routes/permissionRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 
 const app = express();
@@ -40,6 +43,9 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/invoices", invoiceRoutes);
+app.use("/api/v1/permissions", permissionRoutes);
+app.use("/api/v1/reports", reportRoutes);
 
 
 // Middleware xử lý lỗi tập trung (phải đặt sau tất cả routes)

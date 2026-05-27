@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getPermissionsForRole } = require('../services/permissionService');
 
 // Tạo JWT token
 const generateToken = (id) => {
@@ -11,7 +12,7 @@ const generateToken = (id) => {
 // POST /api/v1/auth/register
 exports.register = async (req, res, next) => {
   try {
-    const { fullName, email, phone, password, role, specialization } = req.body;
+    const { fullName, email, phone, password } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -23,11 +24,11 @@ exports.register = async (req, res, next) => {
       email,
       phone,
       password,
-      role: role || 'RECEPTIONIST',
-      specialization
+      role: 'RECEPTIONIST'
     });
 
     const token = generateToken(user._id);
+    const permissions = await getPermissionsForRole(user.role);
 
     res.status(201).json({
       success: true,
@@ -38,6 +39,7 @@ exports.register = async (req, res, next) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        permissions,
         specialization: user.specialization,
         status: user.status
       }
@@ -73,6 +75,7 @@ exports.login = async (req, res, next) => {
     }
 
     const token = generateToken(user._id);
+    const permissions = await getPermissionsForRole(user.role);
 
     res.json({
       success: true,
@@ -83,6 +86,7 @@ exports.login = async (req, res, next) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        permissions,
         specialization: user.specialization,
         status: user.status
       }
@@ -96,7 +100,9 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
-    res.json({ success: true, data: user });
+    const userObject = user.toObject();
+    userObject.permissions = await getPermissionsForRole(user.role);
+    res.json({ success: true, data: userObject });
   } catch (error) {
     next(error);
   }

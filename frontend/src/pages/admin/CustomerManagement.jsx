@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getPatients, createPatient, updatePatient, deletePatient } from '../../services/patientService';
+/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getPatients, createPatient } from '../../services/patientService';
 
 const CustomerManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const recordBasePath = location.pathname.startsWith('/receptionist')
+    ? '/receptionist/patients'
+    : '/admin/records';
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [patients, setPatients] = useState([]);
@@ -140,7 +145,7 @@ const CustomerManagement = () => {
                         </div>
                         <div>
                           <p 
-                            onClick={() => navigate(`/admin/records?id=${patient._id}`)}
+                            onClick={() => navigate(`${recordBasePath}?id=${patient._id}`)}
                             className="font-bold text-slate-900 group-hover:text-[var(--color-primary)] transition-colors cursor-pointer"
                           >
                             {patient.fullName}
@@ -166,7 +171,7 @@ const CustomerManagement = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => navigate(`/admin/records?id=${patient._id}`)}
+                          onClick={() => navigate(`${recordBasePath}?id=${patient._id}`)}
                           className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors tooltip-trigger relative" 
                           title="Hồ sơ bệnh án"
                         >

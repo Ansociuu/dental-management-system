@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, NavLink, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { filterMenuByPermission, hasPermission } from '../utils/permissions';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -18,41 +19,42 @@ const AdminLayout = () => {
   );
 
   const menuItems = [
-    { icon: 'dashboard', label: 'Tổng quan', path: '/admin/dashboard' },
+    { icon: 'dashboard', label: 'Tổng quan', path: '/admin/dashboard', permission: { module: 'dashboard' } },
     { 
       icon: 'calendar_month', 
       label: 'Lịch hẹn', 
       path: '#',
       isExpandable: true,
       subItems: [
-        { label: 'Danh sách lịch hẹn', path: '/admin/appointments' },
-        { label: 'Đặt lịch mới', path: '/admin/appointments/book' },
-        { label: 'Theo dõi & Điều phối', path: '/admin/appointments/monitor' },
-        { label: 'Gọi lại sau khám', path: '/admin/appointments/follow-ups' },
-        { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules' }
+        { label: 'Danh sách lịch hẹn', path: '/admin/appointments', permission: { module: 'appointments' } },
+        { label: 'Đặt lịch mới', path: '/admin/appointments/book', permission: { module: 'appointments', action: 'create' } },
+        { label: 'Theo dõi & Điều phối', path: '/admin/appointments/monitor', permission: { module: 'appointments' } },
+        { label: 'Gọi lại sau khám', path: '/admin/appointments/follow-ups', permission: { module: 'followUps' } },
+        { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules', permission: { module: 'doctorDuty' } }
       ]
     },
-    { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services' },
+    { icon: 'receipt_long', label: 'Thanh toán', path: '/admin/payments', permission: { module: 'payments' } },
+    { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services', permission: { module: 'services' } },
     { 
       icon: 'manage_accounts', 
       label: 'Người dùng', 
       path: '#', // Handled by onClick
       isExpandable: true,
       subItems: [
-        { label: 'Nhân viên', path: '/admin/users' },
-        { label: 'Khách hàng', path: '/admin/customers' }
+        { label: 'Nhân viên', path: '/admin/users', permission: { module: 'users' } },
+        { label: 'Khách hàng', path: '/admin/customers', permission: { module: 'patients' } }
       ]
     },
-    { icon: 'security', label: 'Phân quyền', path: '/admin/roles' },
+    { icon: 'security', label: 'Phân quyền', path: '/admin/roles', permission: { module: 'roles' } },
     { 
       icon: 'bar_chart', 
       label: 'Báo cáo', 
       path: '#',
       isExpandable: true,
       subItems: [
-        { label: 'Doanh thu', path: '/admin/reports/revenue' },
-        { label: 'Hiệu suất Bác sĩ', path: '/admin/reports/doctor-performance' },
-        { label: 'Bệnh nhân & Dịch vụ', path: '/admin/reports/patients-services' }
+        { label: 'Doanh thu', path: '/admin/reports/revenue', permission: { module: 'reports' } },
+        { label: 'Hiệu suất Bác sĩ', path: '/admin/reports/doctor-performance', permission: { module: 'reports' } },
+        { label: 'Bệnh nhân & Dịch vụ', path: '/admin/reports/patients-services', permission: { module: 'reports' } }
       ]
     },
     { 
@@ -61,12 +63,14 @@ const AdminLayout = () => {
       path: '#',
       isExpandable: true,
       subItems: [
-        { label: 'Cấu hình chung', path: '/admin/settings' },
-        { label: 'Ca làm việc', path: '/admin/shifts' },
-        { label: 'Ngày nghỉ lễ', path: '/admin/holidays' }
+        { label: 'Cấu hình chung', path: '/admin/settings', permission: { module: 'settings' } },
+        { label: 'Ca làm việc', path: '/admin/shifts', permission: { module: 'settings' } },
+        { label: 'Ngày nghỉ lễ', path: '/admin/holidays', permission: { module: 'settings' } }
       ]
     },
   ];
+
+  const visibleMenuItems = filterMenuByPermission(menuItems, user);
 
   const roleMap = {
     'ADMIN': 'Quản trị',
@@ -105,17 +109,19 @@ const AdminLayout = () => {
 
         {/* Action Button */}
         <div className="px-6 pb-6">
-          <Link to="/admin/appointments/book" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Hẹn lịch mới
-          </Link>
+          {hasPermission(user, 'appointments', 'create') && (
+            <Link to="/admin/appointments/book" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Hẹn lịch mới
+            </Link>
+          )}
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 pb-6 custom-scrollbar">
           <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Danh mục chính</p>
           <ul className="space-y-1.5">
-            {menuItems.map((item, index) => (
+            {visibleMenuItems.map((item, index) => (
               <li key={index}>
                 {item.isExpandable ? (
                   <div>

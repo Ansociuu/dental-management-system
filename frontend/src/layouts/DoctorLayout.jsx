@@ -1,17 +1,18 @@
-import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { filterMenuByPermission } from '../utils/permissions';
 
 const DoctorLayout = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   const menuItems = [
-    { icon: 'dashboard', label: 'Bảng điều khiển', path: '/doctor/dashboard' },
+    { icon: 'dashboard', label: 'Bảng điều khiển', path: '/doctor/dashboard', permission: { module: 'dashboard' } },
     { icon: 'badge', label: 'Hồ sơ bác sĩ', path: '/doctor/profile' },
-    { icon: 'person_search', label: 'Hồ sơ bệnh án', path: '/doctor/records' },
-    { icon: 'calendar_month', label: 'Đăng ký lịch trực', path: '/doctor/duty-schedules' },
+    { icon: 'person_search', label: 'Hồ sơ bệnh án', path: '/doctor/records', permission: { module: 'records' } },
+    { icon: 'calendar_month', label: 'Đăng ký lịch trực', path: '/doctor/duty-schedules', permission: { module: 'doctorDuty' } },
   ];
+
+  const visibleMenuItems = filterMenuByPermission(menuItems, user);
 
   return (
     <div className="flex h-screen bg-slate-100 font-body">
@@ -45,7 +46,7 @@ const DoctorLayout = () => {
         <nav className="flex-1 overflow-y-auto px-4 pb-6 custom-scrollbar">
           <p className="px-4 text-[10px] font-bold text-teal-500/60 uppercase tracking-widest mb-4">Chuyên môn & Ca khám</p>
           <ul className="space-y-1.5">
-            {menuItems.map((item, index) => (
+            {visibleMenuItems.map((item, index) => (
               <li key={index}>
                 <NavLink
                   to={item.path}

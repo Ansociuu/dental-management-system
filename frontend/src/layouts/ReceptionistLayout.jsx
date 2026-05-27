@@ -1,18 +1,21 @@
-import React from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { filterMenuByPermission, hasPermission } from '../utils/permissions';
 
 const ReceptionistLayout = () => {
   const { user, logout } = useAuth();
 
   const menuItems = [
-    { icon: 'dashboard', label: 'Tổng quan', path: '/receptionist/dashboard' },
-    { icon: 'event_available', label: 'Đặt lịch', path: '/receptionist/appointments/book' },
-    { icon: 'monitor_heart', label: 'Theo dõi lịch khám', path: '/receptionist/appointments/monitor' },
-    { icon: 'support_agent', label: 'Gọi lại sau khám', path: '/receptionist/follow-ups' },
-    { icon: 'groups', label: 'Bệnh nhân', path: '/receptionist/patients' },
-    { icon: 'clinical_notes', label: 'Lịch trực bác sĩ', path: '/receptionist/duty-schedules' }
+    { icon: 'dashboard', label: 'Tổng quan', path: '/receptionist/dashboard', permission: { module: 'dashboard' } },
+    { icon: 'event_available', label: 'Đặt lịch', path: '/receptionist/appointments/book', permission: { module: 'appointments', action: 'create' } },
+    { icon: 'monitor_heart', label: 'Theo dõi lịch khám', path: '/receptionist/appointments/monitor', permission: { module: 'appointments' } },
+    { icon: 'receipt_long', label: 'Thanh toán', path: '/receptionist/payments', permission: { module: 'payments' } },
+    { icon: 'support_agent', label: 'Gọi lại sau khám', path: '/receptionist/follow-ups', permission: { module: 'followUps' } },
+    { icon: 'groups', label: 'Bệnh nhân', path: '/receptionist/patients', permission: { module: 'patients' } },
+    { icon: 'clinical_notes', label: 'Lịch trực bác sĩ', path: '/receptionist/duty-schedules', permission: { module: 'doctorDuty' } }
   ];
+
+  const visibleMenuItems = filterMenuByPermission(menuItems, user);
 
   return (
     <div className="flex h-screen bg-slate-50 font-body">
@@ -40,16 +43,18 @@ const ReceptionistLayout = () => {
         )}
 
         <div className="px-6 pb-6">
-          <Link to="/receptionist/appointments/book" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Hẹn lịch mới
-          </Link>
+          {hasPermission(user, 'appointments', 'create') && (
+            <Link to="/receptionist/appointments/book" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-0.5">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Hẹn lịch mới
+            </Link>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 pb-6 custom-scrollbar">
           <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Tiếp nhận</p>
           <ul className="space-y-1.5">
-            {menuItems.map((item) => (
+            {visibleMenuItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}

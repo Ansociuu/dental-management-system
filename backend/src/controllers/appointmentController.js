@@ -25,6 +25,12 @@ const getPreviousDate = (dateInput) => {
   return parsed;
 };
 
+const addDays = (dateInput, days) => {
+  const parsed = dateInput ? new Date(dateInput) : new Date();
+  parsed.setDate(parsed.getDate() + days);
+  return parsed;
+};
+
 /**
  * @desc    Đăng ký lịch khám mới
  * @route   POST /api/v1/appointments
@@ -135,12 +141,23 @@ const monitorAppointments = async (req, res, next) => {
 const getFollowUpAppointments = async (req, res, next) => {
   try {
     const followUpDate = req.query.date || new Date().toISOString().split('T')[0];
-    const appointmentDate = getPreviousDate(followUpDate);
     const followUpStatus = req.query.status || 'PENDING';
+    let appointmentDateFilter;
+
+    if (req.query.dateFrom || req.query.dateTo) {
+      const from = req.query.dateFrom || req.query.dateTo;
+      const to = req.query.dateTo || req.query.dateFrom;
+      appointmentDateFilter = {
+        $gte: getDayRange(getPreviousDate(from)).$gte,
+        $lte: getDayRange(getPreviousDate(to)).$lte
+      };
+    } else {
+      appointmentDateFilter = getDayRange(getPreviousDate(followUpDate));
+    }
 
     const filter = {
       status: 'COMPLETED',
-      date: getDayRange(appointmentDate)
+      date: appointmentDateFilter
     };
 
     if (followUpStatus !== 'ALL') {
@@ -160,10 +177,17 @@ const getFollowUpAppointments = async (req, res, next) => {
       .populate('doctorId', 'fullName specialization')
       .populate('shiftId', 'name startTime endTime')
       .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price')
       .populate('followUpBy', 'fullName role')
       .sort({ date: 1, queueNumber: 1 });
 
-    res.json({ success: true, data: appointments });
+    const data = appointments.map((appointment) => {
+      const obj = appointment.toObject();
+      obj.followUpDueDate = addDays(obj.date, 1);
+      return obj;
+    });
+
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -228,9 +252,13 @@ const updateAppointmentFollowUp = async (req, res, next) => {
       .populate('doctorId', 'fullName specialization')
       .populate('shiftId', 'name startTime endTime')
       .populate('serviceId', 'name price')
+      .populate('servicesPerformed.serviceId', 'name price')
       .populate('followUpBy', 'fullName role');
 
-    res.json({ success: true, message: 'Cập nhật gọi lại sau khám thành công', data: populated });
+    const data = populated.toObject();
+    data.followUpDueDate = addDays(data.date, 1);
+
+    res.json({ success: true, message: 'Cập nhật gọi lại sau khám thành công', data });
   } catch (error) {
     next(error);
   }

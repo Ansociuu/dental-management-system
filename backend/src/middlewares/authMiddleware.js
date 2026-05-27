@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { hasPermission } = require('../services/permissionService');
 
 /**
  * Middleware xác thực JWT
@@ -47,4 +48,26 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const requirePermission = (module, action) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Ban chua dang nhap.' });
+      }
+
+      const allowed = await hasPermission(req.user.role, module, action);
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Ban khong co quyen truy cap chuc nang nay.'
+        });
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+module.exports = { protect, authorize, requirePermission };
