@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .env
+docs/BT6_Dac_ta_phan_mem_quan_ly_nha_khoa.md
+docs/mockup_nhom_chuc_nang_2.drawio
+backend/.env
+docs/testing-plan.md
+backend/.env

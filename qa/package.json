@@ -1,0 +1,14 @@
+{
+  "name": "mec-dental-qa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "node e2e/selenium-smoke.mjs",
+    "test:performance": "node performance/autocannon-api.mjs"
+  },
+  "dependencies": {
+    "autocannon": "^8.0.0",
+    "selenium-webdriver": "^4.38.0"
+  }
+}
