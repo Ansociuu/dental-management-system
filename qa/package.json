@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:e2e": "node e2e/selenium-smoke.mjs",
+    "test:e2e:holidays": "node e2e/holiday-settings.mjs",
     "test:performance": "node performance/autocannon-api.mjs"
   },
   "dependencies": {

@@ -279,6 +279,28 @@ Script mac dinh kiem tra:
 - Dashboard admin hien thi.
 - Dang xuat quay ve trang login.
 
+Chay bo test Selenium cho chuc nang ngay nghi:
+
+```bash
+cd qa
+npm run test:e2e:holidays
+```
+
+Bo test nay kiem tra cac test case:
+
+- Them ngay nghi le hop le voi day du thong tin.
+- Bo trong ten ngay nghi bat buoc.
+- Bo trong ngay bat dau bat buoc.
+- Ngay ket thuc nho hon ngay bat dau.
+- Khoang thoi gian trung voi ngay nghi da ton tai.
+- Chinh sua ngay ket thuc cua ngay nghi.
+- Ngung ap dung ngay nghi ACTIVE.
+- Ngay nghi ACTIVE chan dat lich kham.
+- Ngay nghi ACTIVE chan dang ky lich truc bac si.
+- Xac nhan ngay nghi khong bi xoa cung, chi chuyen sang INACTIVE.
+
+Ket qua duoc in ra terminal theo bang gom test case, input, expected result, program result va status. Neu case nao khong dung voi expected result, script se tra ve exit code khac 0 de de nhan biet khi nop minh chung.
+
 Co the cau hinh bang bien moi truong:
 
 ```bash

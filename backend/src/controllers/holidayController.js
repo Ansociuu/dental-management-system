@@ -1,5 +1,36 @@
 const Holiday = require('../models/Holiday');
 
+const findOverlappingHoliday = ({ startDate, endDate, excludeId }) => {
+  const filter = {
+    status: 'ACTIVE',
+    startDate: { $lte: new Date(endDate) },
+    endDate: { $gte: new Date(startDate) }
+  };
+
+  if (excludeId) {
+    filter._id = { $ne: excludeId };
+  }
+
+  return Holiday.findOne(filter);
+};
+
+const validateDateRange = (startDate, endDate) => {
+  if (new Date(endDate) < new Date(startDate)) {
+    const error = new Error('Ngay ket thuc khong duoc nho hon ngay bat dau');
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+const validateNoOverlap = async ({ startDate, endDate, excludeId }) => {
+  const overlapping = await findOverlappingHoliday({ startDate, endDate, excludeId });
+  if (overlapping) {
+    const error = new Error(`Khoang thoi gian nghi trung voi ngay nghi dang ap dung: ${overlapping.name}`);
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
 /**
  * @desc    Thêm mới ngày nghỉ
  * @route   POST /api/v1/holidays
@@ -14,6 +45,8 @@ const createHoliday = async (req, res, next) => {
       error.statusCode = 400;
       throw error;
     }
+
+    await validateNoOverlap({ startDate, endDate });
 
     const holiday = await Holiday.create({ name, startDate, endDate, holidayType, notes });
     res.status(201).json({ success: true, message: 'Thêm ngày nghỉ thành công!', data: holiday });
@@ -50,6 +83,10 @@ const updateHoliday = async (req, res, next) => {
       const error = new Error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu');
       error.statusCode = 400;
       throw error;
+    }
+
+    if (startDate && endDate) {
+      await validateNoOverlap({ startDate, endDate, excludeId: req.params.id });
     }
 
     const holiday = await Holiday.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
