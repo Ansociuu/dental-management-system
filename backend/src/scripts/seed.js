@@ -36,6 +36,7 @@ const seedData = async () => {
       { fullName: 'BS. Phạm Văn Đức', email: 'duc.pham@mec.vn', phone: '0934567890', password: defaultPassword, role: 'DOCTOR', specialization: 'Răng sứ thẩm mỹ', status: 'ACTIVE' },
       { fullName: 'BS. Hoàng Thị Mai', email: 'mai.hoang@mec.vn', phone: '0945678901', password: defaultPassword, role: 'DOCTOR', specialization: 'Nha khoa trẻ em', status: 'ACTIVE' },
       { fullName: 'Nguyễn Thị Lan', email: 'lan.nguyen@mec.vn', phone: '0956789012', password: defaultPassword, role: 'RECEPTIONIST', status: 'ACTIVE' },
+      { fullName: 'Lê Thanh Quản (Manager)', email: 'manager@mec.vn', phone: '0978901234', password: defaultPassword, role: 'MANAGER', status: 'ACTIVE' },
       { fullName: 'Trần Văn Bình (Admin)', email: 'admin@mec.vn', phone: '0967890123', password: defaultPassword, role: 'ADMIN', status: 'ACTIVE' },
     ]);
     console.log(`👨‍⚕️ Đã tạo ${users.length} tài khoản (${users.filter(u => u.role === 'DOCTOR').length} Bác sĩ)`);

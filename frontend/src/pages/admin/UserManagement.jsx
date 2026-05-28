@@ -2,22 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/userService';
+import { useAuth } from '../../context/AuthContext';
 
 const roleMap = {
+  'MANAGER': 'Quản lý',
   'ADMIN': 'Quản trị viên',
   'DOCTOR': 'Bác sĩ',
   'NURSE': 'Y tá',
   'RECEPTIONIST': 'Lễ tân'
 };
-roleMap.PATIENT = 'Bệnh nhân';
 
 const roleMapRev = {
+  'Quản lý': 'MANAGER',
   'Quản trị viên': 'ADMIN',
   'Bác sĩ': 'DOCTOR',
   'Y tá': 'NURSE',
   'Lễ tân': 'RECEPTIONIST'
 };
-roleMapRev['Bệnh nhân'] = 'PATIENT';
 
 const statusMap = {
   'ACTIVE': 'Hoạt động',
@@ -31,6 +32,8 @@ const statusMapRev = {
 
 const UserManagement = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +66,11 @@ const UserManagement = () => {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    if (!isAdmin && ['ADMIN', 'MANAGER'].includes(newUser.role)) {
+      setError('Quản lý không được tạo hoặc gán vai trò quản trị/quản lý.');
+      return;
+    }
+
     setError(''); setSuccess('');
     try {
       if (editingId) {
@@ -83,6 +91,11 @@ const UserManagement = () => {
   };
 
   const handleEdit = (u) => {
+    if (!isAdmin && ['ADMIN', 'MANAGER'].includes(u.role)) {
+      setError('Quản lý không được chỉnh sửa tài khoản quản trị hoặc quản lý khác.');
+      return;
+    }
+
     setEditingId(u._id);
     setNewUser({
       fullName: u.fullName,
@@ -96,6 +109,12 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (id) => {
+    const targetUser = users.find((item) => item._id === id);
+    if (!isAdmin && targetUser && ['ADMIN', 'MANAGER'].includes(targetUser.role)) {
+      setError('Quản lý không được xóa tài khoản quản trị hoặc quản lý khác.');
+      return;
+    }
+
     if (!confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return;
     setError(''); setSuccess('');
     try {
@@ -109,6 +128,11 @@ const UserManagement = () => {
   };
 
   const handleToggleStatus = async (user) => {
+    if (!isAdmin && ['ADMIN', 'MANAGER'].includes(user.role)) {
+      setError('Quản lý không được khóa hoặc mở khóa tài khoản quản trị/quản lý.');
+      return;
+    }
+
     const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
       await updateUser(user._id, { status: nextStatus });
@@ -123,6 +147,7 @@ const UserManagement = () => {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'ADMIN': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'MANAGER': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
       case 'DOCTOR': return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'NURSE': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'RECEPTIONIST': return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -194,12 +219,12 @@ const UserManagement = () => {
               onChange={e => setRoleFilter(e.target.value)} 
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-4 py-3 font-semibold text-sm outline-none focus:border-blue-500 cursor-pointer"
             >
+              <option value="manager">Quản lý</option>
               <option value="">Tất cả vai trò</option>
               <option value="admin">Quản trị viên</option>
               <option value="doctor">Bác sĩ</option>
               <option value="nurse">Y tá</option>
               <option value="receptionist">Lễ tân</option>
-              <option value="patient">Bệnh nhân</option>
             </select>
           </div>
         </div>
@@ -356,11 +381,11 @@ const UserManagement = () => {
                         onChange={(e) => setNewUser({...newUser, role: e.target.value})}
                         className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-slate-700"
                       >
+                        {isAdmin && <option value="MANAGER">Quản lý (Manager)</option>}
                         <option value="DOCTOR">Bác sĩ (Doctor)</option>
-                        <option value="ADMIN">Quản trị viên (Admin)</option>
+                        {isAdmin && <option value="ADMIN">Quản trị viên (Admin)</option>}
                         <option value="NURSE">Y tá (Nurse)</option>
                         <option value="RECEPTIONIST">Lễ tân (Receptionist)</option>
-                        <option value="PATIENT" disabled>Bệnh nhân (Patient)</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">

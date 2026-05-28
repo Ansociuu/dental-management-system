@@ -77,6 +77,9 @@ const RoleManagement = () => {
     if (selectedRole === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action)) {
       return;
     }
+    if (selectedRole === 'MANAGER' && module === 'roles') {
+      return;
+    }
 
     setDraftPermissions((prev) => ({
       ...prev,
@@ -188,7 +191,10 @@ const RoleManagement = () => {
                         </div>
                       </td>
                       {actions.map((action) => {
-                        const locked = selectedRole === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action);
+                        const locked = (
+                          (selectedRole === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action)) ||
+                          (selectedRole === 'MANAGER' && module === 'roles')
+                        );
                         return (
                           <td key={`${module}-${action}`} className="px-4 py-5 text-center">
                             <input

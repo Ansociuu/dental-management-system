@@ -1,5 +1,26 @@
 const User = require('../models/User');
 
+const PROTECTED_USER_ROLES = ['ADMIN', 'MANAGER'];
+
+const isManager = (user) => user?.role === 'MANAGER';
+
+const ensureManagerCanManageUser = (actor, targetUser) => {
+  if (isManager(actor) && PROTECTED_USER_ROLES.includes(targetUser.role)) {
+    const error = new Error('Quan ly khong duoc thao tac voi tai khoan quan tri hoac quan ly khac');
+    error.statusCode = 403;
+    throw error;
+  }
+};
+
+const ensureManagerCanSetRole = (actor, role) => {
+  const normalizedRole = String(role || '').toUpperCase();
+  if (isManager(actor) && PROTECTED_USER_ROLES.includes(normalizedRole)) {
+    const error = new Error('Quan ly khong duoc tao hoac gan vai tro quan tri/quan ly');
+    error.statusCode = 403;
+    throw error;
+  }
+};
+
 // GET /api/v1/users
 exports.getUsers = async (req, res, next) => {
   try {
@@ -8,6 +29,8 @@ exports.getUsers = async (req, res, next) => {
 
     if (role) {
       query.role = role.toUpperCase();
+    } else {
+      query.role = { $ne: 'PATIENT' };
     }
 
     if (search) {
@@ -48,6 +71,7 @@ exports.createUser = async (req, res, next) => {
     if (normalizedRole === 'PATIENT') {
       return res.status(400).json({ success: false, message: 'Tai khoan benh nhan phai dang ky qua cong benh nhan' });
     }
+    ensureManagerCanSetRole(req.user, normalizedRole);
     
     // Check if email already exists
     const existing = await User.findOne({ email });
@@ -96,6 +120,8 @@ exports.updateUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
+    ensureManagerCanManageUser(req.user, user);
+
     // Check if email belongs to someone else
     if (email && email !== user.email) {
       const existing = await User.findOne({ email });
@@ -120,6 +146,7 @@ exports.updateUser = async (req, res, next) => {
       if (normalizedRole === 'PATIENT' && !user.patientId) {
         return res.status(400).json({ success: false, message: 'Khong the chuyen tai khoan noi bo thanh benh nhan' });
       }
+      ensureManagerCanSetRole(req.user, normalizedRole);
       user.role = normalizedRole;
     }
     if (specialization !== undefined) user.specialization = specialization;
@@ -145,6 +172,8 @@ exports.deleteUser = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
+
+    ensureManagerCanManageUser(req.user, user);
 
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Đã xóa người dùng thành công' });

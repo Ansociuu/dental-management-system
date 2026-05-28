@@ -30,7 +30,8 @@ const AdminLayout = () => {
         { label: 'Đặt lịch mới', path: '/admin/appointments/book', permission: { module: 'appointments', action: 'create' } },
         { label: 'Theo dõi & Điều phối', path: '/admin/appointments/monitor', permission: { module: 'appointments' } },
         { label: 'Gọi lại sau khám', path: '/admin/appointments/follow-ups', permission: { module: 'followUps' } },
-        { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules', permission: { module: 'doctorDuty' } }
+        { label: 'Lịch trực Bác sĩ', path: '/admin/appointments/duty-schedules', permission: { module: 'doctorDuty' } },
+        { label: 'Lịch sử ca trực', path: '/admin/appointments/duty-history', permission: { module: 'doctorDuty' } }
       ]
     },
     { icon: 'receipt_long', label: 'Thanh toán', path: '/admin/payments', permission: { module: 'payments' } },
@@ -74,6 +75,7 @@ const AdminLayout = () => {
 
   const roleMap = {
     'ADMIN': 'Quản trị',
+    'MANAGER': 'Quản lý',
     'DOCTOR': 'Bác sĩ',
     'NURSE': 'Y tá',
     'RECEPTIONIST': 'Lễ tân'

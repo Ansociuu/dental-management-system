@@ -3,6 +3,9 @@ export const hasPermission = (user, module, action = 'view') => {
   if (user.role === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action)) {
     return true;
   }
+  if (user.role === 'MANAGER' && module === 'roles') {
+    return false;
+  }
 
   return Boolean(user.permissions?.[module]?.[action]);
 };

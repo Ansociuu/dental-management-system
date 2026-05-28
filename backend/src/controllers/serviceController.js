@@ -1,4 +1,7 @@
 const Service = require('../models/Service');
+const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
+
+const SERVICE_LOG_FIELDS = ['name', 'description', 'price', 'duration', 'status'];
 
 // GET /api/v1/services
 exports.getServices = async (req, res, next) => {
@@ -38,6 +41,16 @@ exports.createService = async (req, res, next) => {
       status: status ? status.toUpperCase() : 'ACTIVE'
     });
 
+    await recordConfigChange({
+      resourceType: 'SERVICE',
+      resourceId: newService._id,
+      resourceName: newService.name,
+      action: 'CREATE',
+      before: null,
+      after: toPlainObject(newService, SERVICE_LOG_FIELDS),
+      user: req.user
+    });
+
     res.status(201).json({ success: true, data: newService });
   } catch (error) {
     next(error);
@@ -54,6 +67,8 @@ exports.updateService = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy dịch vụ' });
     }
 
+    const before = toPlainObject(service, SERVICE_LOG_FIELDS);
+
     if (name && name !== service.name) {
       const existing = await Service.findOne({ name });
       if (existing) {
@@ -68,6 +83,15 @@ exports.updateService = async (req, res, next) => {
     if (status) service.status = status.toUpperCase();
 
     await service.save();
+    await recordConfigChange({
+      resourceType: 'SERVICE',
+      resourceId: service._id,
+      resourceName: service.name,
+      action: before.status !== service.status && Object.keys(req.body).length === 1 && req.body.status ? 'STATUS_CHANGE' : 'UPDATE',
+      before,
+      after: toPlainObject(service, SERVICE_LOG_FIELDS),
+      user: req.user
+    });
     res.json({ success: true, data: service });
   } catch (error) {
     next(error);
@@ -82,9 +106,16 @@ exports.deleteService = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy dịch vụ' });
     }
 
-    // Optional: Check if service has scheduled appointments
-    // Allow delete for simplicity
     await Service.findByIdAndDelete(req.params.id);
+    await recordConfigChange({
+      resourceType: 'SERVICE',
+      resourceId: service._id,
+      resourceName: service.name,
+      action: 'DELETE',
+      before: toPlainObject(service, SERVICE_LOG_FIELDS),
+      after: null,
+      user: req.user
+    });
     res.json({ success: true, message: 'Đã xóa dịch vụ thành công' });
   } catch (error) {
     next(error);

@@ -1,28 +1,27 @@
 const mongoose = require('mongoose');
-const { PERMISSION_MODULES, PERMISSION_ACTIONS, normalizePermissions } = require('../config/permissions');
+const {
+  PERMISSION_MODULES,
+  PERMISSION_ACTIONS,
+  applyRolePermissionRules
+} = require('../config/permissions');
 
 const rolePermissionSchema = new mongoose.Schema({
   role: {
     type: String,
-    enum: ['ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST', 'PATIENT'],
+    enum: ['ADMIN', 'MANAGER', 'DOCTOR', 'NURSE', 'RECEPTIONIST', 'PATIENT'],
     required: true,
     unique: true
   },
   permissions: {
     type: Object,
     required: true,
-    default: () => normalizePermissions()
+    default: () => applyRolePermissionRules()
   },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 rolePermissionSchema.pre('validate', function normalizeBeforeValidate() {
-  this.permissions = normalizePermissions(this.permissions);
-
-  if (this.role === 'ADMIN') {
-    this.permissions.roles.view = true;
-    this.permissions.roles.update = true;
-  }
+  this.permissions = applyRolePermissionRules(this.role, this.permissions);
 });
 
 rolePermissionSchema.methods.hasPermission = function hasPermission(module, action) {

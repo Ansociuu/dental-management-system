@@ -16,7 +16,7 @@ const { protect, authorize, requirePermission } = require('../middlewares/authMi
 /** @route /api/v1/appointments */
 router.post('/', protect, requirePermission('appointments', 'create'), createAppointment);
 router.get('/monitor', protect, requirePermission('appointments', 'view'), monitorAppointments);
-router.get('/doctor-today', protect, authorize('DOCTOR', 'ADMIN'), getDoctorTodayAppointments);
+router.get('/doctor-today', protect, authorize('DOCTOR', 'ADMIN', 'MANAGER'), getDoctorTodayAppointments);
 router.get('/follow-ups', protect, requirePermission('followUps', 'view'), getFollowUpAppointments);
 router.get('/', protect, requirePermission('appointments', 'view'), getAppointments);
 router.get('/:id', protect, requirePermission('appointments', 'view'), getAppointmentById);
@@ -24,6 +24,6 @@ router.patch('/:id/status', protect, requirePermission('appointments', 'update')
 router.patch('/:id/follow-up', protect, requirePermission('followUps', 'update'), updateAppointmentFollowUp);
 
 // Các tuyến đường dành riêng cho bác sĩ
-router.put('/:id/examine', protect, authorize('DOCTOR', 'ADMIN'), requirePermission('records', 'update'), examineAppointment);
+router.put('/:id/examine', protect, authorize('DOCTOR', 'ADMIN', 'MANAGER'), requirePermission('records', 'update'), examineAppointment);
 
 module.exports = router;

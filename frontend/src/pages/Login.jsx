@@ -28,7 +28,7 @@ const Login = () => {
         navigate('/doctor');
       } else if (user.role === 'PATIENT') {
         navigate('/patient');
-      } else if (user.role === 'ADMIN' || user.role === 'RECEPTIONIST') {
+      } else if (user.role === 'ADMIN' || user.role === 'MANAGER' || user.role === 'RECEPTIONIST') {
         navigate('/admin');
       } else {
         navigate('/');

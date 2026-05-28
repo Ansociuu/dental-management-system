@@ -334,7 +334,7 @@ const DoctorPatientRecord = () => {
                         {/* Header visit */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200/60 pb-4 gap-2">
                           <div>
-                            <p className="text-sm font-black text-teal-700">{new Date(apt.date).toLocaleDateString('vi-VN')} • Ca {apt.shiftId?.name || '—'}</p>
+                            <p className="text-sm font-black text-teal-700">{new Date(apt.date).toLocaleDateString('vi-VN')} • {apt.shiftId?.name || '—'}</p>
                             <p className="text-xs text-slate-500 mt-1 font-semibold">Bác sĩ phụ trách: {apt.doctorId?.fullName || '—'}</p>
                           </div>
                           <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg uppercase tracking-wider">Hoàn tất</span>

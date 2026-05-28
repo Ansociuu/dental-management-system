@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getServices, createService, updateService, deleteService } from '../../services/serviceService';
+import ConfigChangeHistory from '../../components/ConfigChangeHistory';
 
 const statusMap = {
   'ACTIVE': 'Hoạt động',
@@ -15,6 +16,7 @@ const ServiceManagement = () => {
   const [form, setForm] = useState({ name: '', description: '', price: '', duration: 30, status: 'ACTIVE' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const fetchServices = async () => {
     try {
@@ -56,6 +58,7 @@ const ServiceManagement = () => {
       setIsAddModalOpen(false);
       setEditingId(null);
       setForm({ name: '', description: '', price: '', duration: 30, status: 'ACTIVE' });
+      setHistoryRefreshKey((key) => key + 1);
       fetchServices();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -81,6 +84,7 @@ const ServiceManagement = () => {
     try {
       await deleteService(id);
       setSuccess('Xóa dịch vụ thành công!');
+      setHistoryRefreshKey((key) => key + 1);
       fetchServices();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -93,6 +97,7 @@ const ServiceManagement = () => {
     try {
       await updateService(svc._id, { status: nextStatus });
       setSuccess(`Đã chuyển trạng thái dịch vụ sang ${statusMap[nextStatus]}!`);
+      setHistoryRefreshKey((key) => key + 1);
       fetchServices();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -242,6 +247,8 @@ const ServiceManagement = () => {
           </div>
         </div>
       )}
+
+      <ConfigChangeHistory resourceType="SERVICE" title="Lịch sử thay đổi dịch vụ" refreshKey={historyRefreshKey} />
     </div>
   );
 };

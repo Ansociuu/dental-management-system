@@ -1,4 +1,8 @@
 const Shift = require('../models/Shift');
+const DutySchedule = require('../models/DutySchedule');
+const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
+
+const SHIFT_LOG_FIELDS = ['name', 'startTime', 'endTime', 'maxPatients', 'status'];
 
 /**
  * @desc    Tạo ca làm việc mới
@@ -16,6 +20,15 @@ const createShift = async (req, res, next) => {
     }
 
     const shift = await Shift.create({ name, startTime, endTime, maxPatients: maxPatients || 20 });
+    await recordConfigChange({
+      resourceType: 'SHIFT',
+      resourceId: shift._id,
+      resourceName: shift.name,
+      action: 'CREATE',
+      before: null,
+      after: toPlainObject(shift, SHIFT_LOG_FIELDS),
+      user: req.user
+    });
     res.status(201).json({ success: true, message: 'Tạo ca làm việc thành công!', data: shift });
   } catch (error) {
     next(error);
@@ -49,12 +62,46 @@ const updateShift = async (req, res, next) => {
       throw error;
     }
 
-    const shift = await Shift.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!shift) {
+    const currentShift = await Shift.findById(req.params.id);
+    if (!currentShift) {
       const error = new Error('Không tìm thấy ca làm việc');
       error.statusCode = 404;
       throw error;
     }
+
+    await DutySchedule.updateMany(
+      {
+        shiftId: currentShift._id,
+        date: { $lte: new Date() },
+        $or: [
+          { 'shiftSnapshot.name': { $exists: false } },
+          { 'shiftSnapshot.startTime': { $exists: false } },
+          { 'shiftSnapshot.endTime': { $exists: false } }
+        ]
+      },
+      {
+        $set: {
+          shiftSnapshot: {
+            name: currentShift.name,
+            startTime: currentShift.startTime,
+            endTime: currentShift.endTime,
+            maxPatients: currentShift.maxPatients || 0
+          }
+        }
+      }
+    );
+
+    const before = toPlainObject(currentShift, SHIFT_LOG_FIELDS);
+    const shift = await Shift.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    await recordConfigChange({
+      resourceType: 'SHIFT',
+      resourceId: shift._id,
+      resourceName: shift.name,
+      action: 'UPDATE',
+      before,
+      after: toPlainObject(shift, SHIFT_LOG_FIELDS),
+      user: req.user
+    });
     res.json({ success: true, message: 'Cập nhật ca làm việc thành công!', data: shift });
   } catch (error) {
     next(error);
@@ -67,12 +114,22 @@ const updateShift = async (req, res, next) => {
  */
 const deleteShift = async (req, res, next) => {
   try {
-    const shift = await Shift.findByIdAndDelete(req.params.id);
+    const shift = await Shift.findById(req.params.id);
     if (!shift) {
       const error = new Error('Không tìm thấy ca làm việc');
       error.statusCode = 404;
       throw error;
     }
+    await Shift.findByIdAndDelete(req.params.id);
+    await recordConfigChange({
+      resourceType: 'SHIFT',
+      resourceId: shift._id,
+      resourceName: shift.name,
+      action: 'DELETE',
+      before: toPlainObject(shift, SHIFT_LOG_FIELDS),
+      after: null,
+      user: req.user
+    });
     res.json({ success: true, message: 'Xóa ca làm việc thành công!' });
   } catch (error) {
     next(error);

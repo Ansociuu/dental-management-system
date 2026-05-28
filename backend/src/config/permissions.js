@@ -35,6 +35,14 @@ const DEFAULT_ROLE_PERMISSIONS = {
       return acc;
     }, {})
   ),
+  MANAGER: makePermissions(
+    PERMISSION_MODULES.reduce((acc, module) => {
+      if (module !== 'roles') {
+        acc[module] = allActions;
+      }
+      return acc;
+    }, {})
+  ),
   RECEPTIONIST: makePermissions({
     dashboard: readOnly,
     appointments: ['view', 'create', 'update'],
@@ -78,17 +86,37 @@ const normalizePermissions = (permissions = {}) => {
   }, {});
 };
 
+const applyRolePermissionRules = (role, permissions = {}) => {
+  const normalizedRole = String(role || '').toUpperCase();
+  const normalized = normalizePermissions(permissions);
+
+  if (normalizedRole === 'ADMIN') {
+    normalized.roles.view = true;
+    normalized.roles.update = true;
+  }
+
+  if (normalizedRole === 'MANAGER') {
+    PERMISSION_ACTIONS.forEach((action) => {
+      normalized.roles[action] = false;
+    });
+  }
+
+  return normalized;
+};
+
 const mergeWithDefaults = (role, permissions = {}) => {
   const defaults = DEFAULT_ROLE_PERMISSIONS[role] || makePermissions();
   const normalized = normalizePermissions(permissions);
 
-  return PERMISSION_MODULES.reduce((acc, module) => {
+  const merged = PERMISSION_MODULES.reduce((acc, module) => {
     acc[module] = PERMISSION_ACTIONS.reduce((actionAcc, action) => {
       actionAcc[action] = Boolean(normalized[module][action] || defaults[module]?.[action]);
       return actionAcc;
     }, {});
     return acc;
   }, {});
+
+  return applyRolePermissionRules(role, merged);
 };
 
 const getDefaultPermissions = (role) => DEFAULT_ROLE_PERMISSIONS[role] || makePermissions();
@@ -99,5 +127,6 @@ module.exports = {
   DEFAULT_ROLE_PERMISSIONS,
   getDefaultPermissions,
   normalizePermissions,
+  applyRolePermissionRules,
   mergeWithDefaults
 };

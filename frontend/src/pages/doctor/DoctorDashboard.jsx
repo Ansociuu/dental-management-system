@@ -214,7 +214,7 @@ const DoctorDashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <p className="font-bold text-slate-800">Ca {apt.shiftId?.name || '—'}</p>
+                        <p className="font-bold text-slate-800">{apt.shiftId?.name || '—'}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{apt.shiftId?.startTime || '—'} - {apt.shiftId?.endTime || '—'}</p>
                       </td>
                       <td className="px-6 py-5 text-slate-600 font-medium max-w-[200px] truncate">

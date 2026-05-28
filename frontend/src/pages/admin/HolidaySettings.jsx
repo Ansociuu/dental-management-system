@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getHolidays, createHoliday, updateHoliday, updateHolidayStatus } from '../../services/holidayService';
+import ConfigChangeHistory from '../../components/ConfigChangeHistory';
 
 const HolidaySettings = () => {
   const [holidays, setHolidays] = useState([]);
@@ -8,6 +9,7 @@ const HolidaySettings = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', startDate: '', endDate: '', holidayType: 'LE', notes: '' });
   const [error, setError] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const holidayTypeLabels = { LE: 'Nghỉ lễ', TOAN_PHONG_KHAM: 'Toàn phòng khám', DAC_BIET: 'Đặc biệt' };
   const holidayTypeColors = { LE: 'bg-rose-100 text-rose-700 border-rose-200', TOAN_PHONG_KHAM: 'bg-amber-100 text-amber-700 border-amber-200', DAC_BIET: 'bg-purple-100 text-purple-700 border-purple-200' };
@@ -38,6 +40,7 @@ const HolidaySettings = () => {
       setIsModalOpen(false);
       setEditingId(null);
       setForm({ name: '', startDate: '', endDate: '', holidayType: 'LE', notes: '' });
+      setHistoryRefreshKey((key) => key + 1);
       fetchHolidays();
     } catch (err) {
       setError(err.message);
@@ -53,6 +56,7 @@ const HolidaySettings = () => {
   const handleToggleStatus = async (h) => {
     try {
       await updateHolidayStatus(h._id, h.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE');
+      setHistoryRefreshKey((key) => key + 1);
       fetchHolidays();
     } catch (err) {
       setError(err.message);
@@ -175,6 +179,8 @@ const HolidaySettings = () => {
           </div>
         </div>
       )}
+
+      <ConfigChangeHistory resourceType="HOLIDAY" title="Lịch sử thay đổi ngày nghỉ" refreshKey={historyRefreshKey} />
     </div>
   );
 };

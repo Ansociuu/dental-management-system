@@ -1,5 +1,10 @@
 const RolePermission = require('../models/RolePermission');
-const { DEFAULT_ROLE_PERMISSIONS, getDefaultPermissions, normalizePermissions } = require('../config/permissions');
+const {
+  DEFAULT_ROLE_PERMISSIONS,
+  getDefaultPermissions,
+  normalizePermissions,
+  applyRolePermissionRules
+} = require('../config/permissions');
 
 const ensureRolePermission = async (role) => {
   const normalizedRole = String(role || '').toUpperCase();
@@ -26,13 +31,13 @@ const ensureRolePermission = async (role) => {
     });
   });
 
-  if (normalizedRole === 'ADMIN' && (!nextPermissions.roles?.view || !nextPermissions.roles?.update)) {
-    nextPermissions.roles = { ...(nextPermissions.roles || {}), view: true, update: true };
+  const ruledPermissions = applyRolePermissionRules(normalizedRole, nextPermissions);
+  if (JSON.stringify(ruledPermissions) !== JSON.stringify(normalizePermissions(nextPermissions))) {
     changed = true;
   }
 
   if (changed) {
-    rolePermission.permissions = nextPermissions;
+    rolePermission.permissions = ruledPermissions;
     await rolePermission.save();
   }
 
@@ -51,8 +56,12 @@ const seedDefaultPermissions = async () => {
 
 const hasPermission = async (role, module, action) => {
   const permissions = await getPermissionsForRole(role);
-  if (role === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action)) {
+  const normalizedRole = String(role || '').toUpperCase();
+  if (normalizedRole === 'ADMIN' && module === 'roles' && ['view', 'update'].includes(action)) {
     return true;
+  }
+  if (normalizedRole === 'MANAGER' && module === 'roles') {
+    return false;
   }
 
   return Boolean(permissions?.[module]?.[action]);

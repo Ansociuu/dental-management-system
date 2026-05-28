@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const AppointmentMonitor = () => {
   const { user } = useAuth();
-  const canCompleteAppointment = user?.role === 'ADMIN';
+  const canCompleteAppointment = user?.role === 'ADMIN' || user?.role === 'MANAGER';
   const [appointments, setAppointments] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [doctors, setDoctors] = useState([]);

@@ -3,12 +3,14 @@ const {
   PERMISSION_MODULES,
   PERMISSION_ACTIONS,
   DEFAULT_ROLE_PERMISSIONS,
-  normalizePermissions
+  normalizePermissions,
+  applyRolePermissionRules
 } = require('../config/permissions');
 const { ensureRolePermission, seedDefaultPermissions } = require('../services/permissionService');
 
 const ROLE_LABELS = {
   ADMIN: 'Quan tri vien',
+  MANAGER: 'Quan ly',
   DOCTOR: 'Bac si',
   NURSE: 'Y ta',
   RECEPTIONIST: 'Le tan'
@@ -50,12 +52,7 @@ const updateRolePermissions = async (req, res, next) => {
       throw error;
     }
 
-    const permissions = normalizePermissions(req.body.permissions || {});
-
-    if (role === 'ADMIN') {
-      permissions.roles.view = true;
-      permissions.roles.update = true;
-    }
+    const permissions = applyRolePermissionRules(role, req.body.permissions || {});
 
     const row = await ensureRolePermission(role);
     row.permissions = permissions;

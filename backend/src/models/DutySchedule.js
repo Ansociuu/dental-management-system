@@ -21,6 +21,12 @@ const dutyScheduleSchema = new mongoose.Schema({
     ref: 'Shift', 
     required: [true, 'Ca trực là bắt buộc'] 
   },
+  shiftSnapshot: {
+    name: { type: String },
+    startTime: { type: String },
+    endTime: { type: String },
+    maxPatients: { type: Number }
+  },
   status: { type: String, enum: ['ACTIVE', 'CANCELLED'], default: 'ACTIVE' }
 }, { timestamps: true });
 

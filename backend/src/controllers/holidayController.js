@@ -1,4 +1,7 @@
 const Holiday = require('../models/Holiday');
+const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
+
+const HOLIDAY_LOG_FIELDS = ['name', 'startDate', 'endDate', 'holidayType', 'status', 'notes'];
 
 const findOverlappingHoliday = ({ startDate, endDate, excludeId }) => {
   const filter = {
@@ -49,6 +52,15 @@ const createHoliday = async (req, res, next) => {
     await validateNoOverlap({ startDate, endDate });
 
     const holiday = await Holiday.create({ name, startDate, endDate, holidayType, notes });
+    await recordConfigChange({
+      resourceType: 'HOLIDAY',
+      resourceId: holiday._id,
+      resourceName: holiday.name,
+      action: 'CREATE',
+      before: null,
+      after: toPlainObject(holiday, HOLIDAY_LOG_FIELDS),
+      user: req.user
+    });
     res.status(201).json({ success: true, message: 'Thêm ngày nghỉ thành công!', data: holiday });
   } catch (error) {
     next(error);
@@ -89,12 +101,24 @@ const updateHoliday = async (req, res, next) => {
       await validateNoOverlap({ startDate, endDate, excludeId: req.params.id });
     }
 
-    const holiday = await Holiday.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!holiday) {
+    const currentHoliday = await Holiday.findById(req.params.id);
+    if (!currentHoliday) {
       const error = new Error('Không tìm thấy ngày nghỉ');
       error.statusCode = 404;
       throw error;
     }
+
+    const before = toPlainObject(currentHoliday, HOLIDAY_LOG_FIELDS);
+    const holiday = await Holiday.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    await recordConfigChange({
+      resourceType: 'HOLIDAY',
+      resourceId: holiday._id,
+      resourceName: holiday.name,
+      action: 'UPDATE',
+      before,
+      after: toPlainObject(holiday, HOLIDAY_LOG_FIELDS),
+      user: req.user
+    });
     res.json({ success: true, message: 'Cập nhật ngày nghỉ thành công!', data: holiday });
   } catch (error) {
     next(error);
@@ -114,12 +138,24 @@ const updateHolidayStatus = async (req, res, next) => {
       throw error;
     }
 
-    const holiday = await Holiday.findByIdAndUpdate(req.params.id, { status }, { new: true });
-    if (!holiday) {
+    const currentHoliday = await Holiday.findById(req.params.id);
+    if (!currentHoliday) {
       const error = new Error('Không tìm thấy ngày nghỉ');
       error.statusCode = 404;
       throw error;
     }
+
+    const before = toPlainObject(currentHoliday, HOLIDAY_LOG_FIELDS);
+    const holiday = await Holiday.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    await recordConfigChange({
+      resourceType: 'HOLIDAY',
+      resourceId: holiday._id,
+      resourceName: holiday.name,
+      action: 'STATUS_CHANGE',
+      before,
+      after: toPlainObject(holiday, HOLIDAY_LOG_FIELDS),
+      user: req.user
+    });
     res.json({ success: true, message: `Đã cập nhật trạng thái thành ${status}`, data: holiday });
   } catch (error) {
     next(error);

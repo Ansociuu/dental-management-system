@@ -10,6 +10,7 @@ const DoctorLayout = () => {
     { icon: 'badge', label: 'Hồ sơ bác sĩ', path: '/doctor/profile' },
     { icon: 'person_search', label: 'Hồ sơ bệnh án', path: '/doctor/records', permission: { module: 'records' } },
     { icon: 'calendar_month', label: 'Đăng ký lịch trực', path: '/doctor/duty-schedules', permission: { module: 'doctorDuty' } },
+    { icon: 'history', label: 'Lịch sử ca trực', path: '/doctor/duty-history', permission: { module: 'doctorDuty' } },
   ];
 
   const visibleMenuItems = filterMenuByPermission(menuItems, user);

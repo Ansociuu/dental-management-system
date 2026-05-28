@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getShifts, createShift, updateShift, deleteShift } from '../../services/shiftService';
+import ConfigChangeHistory from '../../components/ConfigChangeHistory';
 
 const ShiftSettings = () => {
   const [shifts, setShifts] = useState([]);
@@ -8,6 +9,7 @@ const ShiftSettings = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', startTime: '', endTime: '' });
   const [error, setError] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const fetchShifts = async () => {
     try {
@@ -36,6 +38,7 @@ const ShiftSettings = () => {
       setIsModalOpen(false);
       setEditingId(null);
       setForm({ name: '', startTime: '', endTime: '' });
+      setHistoryRefreshKey((key) => key + 1);
       fetchShifts();
     } catch (err) {
       setError(err.message);
@@ -53,6 +56,7 @@ const ShiftSettings = () => {
     setError('');
     try {
       await deleteShift(id);
+      setHistoryRefreshKey((key) => key + 1);
       fetchShifts();
     } catch (err) {
       setError(err.message || 'Lỗi khi xóa ca làm việc');
@@ -161,6 +165,8 @@ const ShiftSettings = () => {
           </div>
         </div>
       )}
+
+      <ConfigChangeHistory resourceType="SHIFT" title="Lịch sử thay đổi ca làm việc" refreshKey={historyRefreshKey} />
     </div>
   );
 };

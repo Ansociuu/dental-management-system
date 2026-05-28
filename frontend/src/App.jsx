@@ -42,6 +42,7 @@ import PatientAppointments from './pages/patient/PatientAppointments';
 import PatientBooking from './pages/patient/PatientBooking';
 import PatientRecords from './pages/patient/PatientRecords';
 import PatientInvoices from './pages/patient/PatientInvoices';
+import DutyHistory from './pages/shared/DutyHistory';
 
 // Component bảo vệ các tuyến đường theo vai trò
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -114,7 +115,7 @@ function App() {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -127,6 +128,7 @@ function App() {
             <Route path="appointments/monitor" element={<PermissionRoute module="appointments"><AppointmentMonitor /></PermissionRoute>} />
             <Route path="appointments/follow-ups" element={<PermissionRoute module="followUps"><FollowUpCalls /></PermissionRoute>} />
             <Route path="appointments/duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorDutySchedule /></PermissionRoute>} />
+            <Route path="appointments/duty-history" element={<PermissionRoute module="doctorDuty"><DutyHistory scope="admin" /></PermissionRoute>} />
             <Route path="payments" element={<PermissionRoute module="payments"><PaymentManagement /></PermissionRoute>} />
             <Route path="users" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
             <Route path="staff" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
@@ -177,6 +179,7 @@ function App() {
             <Route path="appointments/:id" element={<PermissionRoute module="appointments"><DoctorAppointmentDetail /></PermissionRoute>} />
             <Route path="records" element={<PermissionRoute module="records"><DoctorPatientRecord /></PermissionRoute>} />
             <Route path="duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorSelfDutySchedule /></PermissionRoute>} />
+            <Route path="duty-history" element={<PermissionRoute module="doctorDuty"><DutyHistory scope="doctor" /></PermissionRoute>} />
             <Route path="profile" element={<DoctorSelfProfile />} />
           </Route>
 
