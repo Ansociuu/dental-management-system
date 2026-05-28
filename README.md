@@ -198,6 +198,151 @@ cd backend
 node -e "require('./src/models/Appointment'); require('./src/controllers/appointmentController'); require('./src/routes/appointmentRoutes'); console.log('backend modules ok')"
 ```
 
+## Kiem Thu Tu Dong Va Phi Chuc Nang
+
+Tai lieu chi tiet nam trong `docs/testing-plan.md`.
+
+### Kiem Thu Chuc Nang Bang Selenium IDE
+
+Selenium IDE la extension tren Chrome/Edge, dung de record va replay thao tac nguoi dung tren giao dien web.
+
+Dieu kien truoc khi test:
+
+```bash
+cd backend
+npm run dev
+```
+
+```bash
+cd frontend
+npm run dev
+```
+
+Neu chua co du lieu mau:
+
+```bash
+cd backend
+npm run seed
+```
+
+Cac buoc thuc hien tren Selenium IDE:
+
+1. Cai extension Selenium IDE cho Chrome hoac Edge.
+2. Mo Selenium IDE va chon `Create a new project`.
+3. Dat Base URL la:
+
+```text
+http://localhost:5173
+```
+
+4. Tao test case moi va bam record.
+5. Thao tac tren trinh duyet, sau do stop record va chay lai test.
+
+Mot so test case nen record:
+
+| Test case | Buoc thuc hien | Ket qua mong doi |
+| --- | --- | --- |
+| Mo landing page | Vao `/` | Trang chu MEC hien thi |
+| Bao ve route admin | Vao `/admin/dashboard` khi chua dang nhap | He thong chuyen ve `/login` |
+| Dang nhap admin | Nhap `admin@mec.vn` / `123456` | Vao duoc man hinh admin |
+| Dang xuat | Bam nut dang xuat | Quay ve `/login` |
+| Sai mat khau | Nhap email dung, mat khau sai | Hien thi loi dang nhap |
+
+Goi y command trong Selenium IDE cho test dang nhap:
+
+```text
+open | /login
+type | css=input[type="email"] | admin@mec.vn
+type | css=input[type="password"] | 123456
+click | xpath=//button[@type='submit']
+waitForElementVisible | css=aside | 10000
+assertElementPresent | css=aside
+```
+
+Nen uu tien selector on dinh nhu `css=input[type="email"]`, `css=input[type="password"]`, `xpath=//button[@type='submit']`, `css=aside` thay vi assert text tieng Viet, vi text co dau co the bi sai encoding tren mot so moi truong.
+
+### Kiem Thu Chuc Nang Bang Selenium WebDriver
+
+Du an co san script Selenium WebDriver trong thu muc `qa`.
+
+```bash
+cd qa
+npm install
+npm run test:e2e
+```
+
+Script mac dinh kiem tra:
+
+- Landing page hien thi.
+- Route admin duoc bao ve khi chua dang nhap.
+- Dang nhap admin thanh cong.
+- Dashboard admin hien thi.
+- Dang xuat quay ve trang login.
+
+Co the cau hinh bang bien moi truong:
+
+```bash
+$env:FRONTEND_URL="http://localhost:5173"
+$env:ADMIN_EMAIL="admin@mec.vn"
+$env:ADMIN_PASSWORD="123456"
+$env:HEADLESS="false"
+npm run test:e2e
+```
+
+### Kiem Thu Phi Chuc Nang Bang Autocannon
+
+Autocannon duoc dung de kiem thu performance cho backend Express. Cong cu nay tao tai HTTP va do throughput, latency, loi request, timeout.
+
+Dieu kien truoc khi test:
+
+```bash
+cd backend
+npm run dev
+```
+
+Chay performance test:
+
+```bash
+cd qa
+npm install
+npm run test:performance
+```
+
+Script mac dinh test endpoint:
+
+```text
+GET http://localhost:5000/
+```
+
+Cau hinh mac dinh:
+
+- 20 ket noi dong thoi.
+- 15 giay.
+- Latency trung binh <= 300ms.
+- Throughput trung binh >= 50 request/giay.
+- Khong co request error, timeout hoac non-2xx response.
+
+Co the tang tai khi chay:
+
+```bash
+$env:CONNECTIONS=50
+$env:DURATION=30
+npm run test:performance
+```
+
+Mau bang ket qua dua vao bao cao:
+
+| Chi so | Ket qua mong doi | Ket qua thuc te |
+| --- | --- | --- |
+| So ket noi dong thoi | 20 | Dien sau khi chay |
+| Thoi gian test | 15s | Dien sau khi chay |
+| Request/giay trung binh | >= 50 req/s | Dien sau khi chay |
+| Latency trung binh | <= 300ms | Dien sau khi chay |
+| P95 latency | Theo doi | Dien sau khi chay |
+| Errors | 0 | Dien sau khi chay |
+| Timeouts | 0 | Dien sau khi chay |
+| Trang thai | Pass/Fail | Dien sau khi chay |
+
 ## Ghi Chú Triển Khai
 
 - Lễ tân không có lịch trực riêng trong hệ thống hiện tại; `DutySchedule` chỉ dùng cho lịch trực bác sĩ.
