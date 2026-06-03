@@ -6,6 +6,8 @@
   "scripts": {
     "test:e2e": "node e2e/selenium-smoke.mjs",
     "test:e2e:holidays": "node e2e/holiday-settings.mjs",
+    "test:e2e:uc3": "node e2e/uc3-tests.mjs",
+    "test:performance:uc3": "node performance/uc3-autocannon.mjs",
     "test:performance": "node performance/autocannon-api.mjs"
   },
   "dependencies": {
