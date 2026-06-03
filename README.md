@@ -370,3 +370,4 @@ Mau bang ket qua dua vao bao cao:
 - Lễ tân không có lịch trực riêng trong hệ thống hiện tại; `DutySchedule` chỉ dùng cho lịch trực bác sĩ.
 - Danh sách gọi lại ngày hôm nay được tính từ các lịch `COMPLETED` của ngày hôm trước.
 - Nếu cần thu ngân hoặc chấm công lễ tân, nên tạo module riêng thay vì dùng lại lịch trực bác sĩ.
+toi
