@@ -1,610 +1,588 @@
 Đặc tả UC2.5 - Theo dõi lịch khám  
 
- 
+Thuộc tính
 
-Thuộc tính 
+Mô tả
 
-Mô tả 
+Use Case ID
 
-Use Case ID 
+UC2.5
 
-UC2.5 
+Use Case Name
 
-Use Case Name 
+Theo dõi lịch khám
 
-Theo dõi lịch khám 
-
-Tác nhân chính 
+Tác nhân chính
 
 Lễ tân, Quản lý  
 
-Tác nhân liên quan 
+Tác nhân liên quan
 
-Bác sĩ, Bệnh nhân 
+Bác sĩ, Bệnh nhân
 
 Mô tả  
 
-Chức năng cho phép theo dõi và quản lý danh sách lịch khám của bệnh nhân theo ngày, bác sĩ, ca khám và trạng thái khám. Hệ thống hỗ trợ cập nhật trạng thái khám và điều phối lịch khám trong quá trình vận hành phòng khám. 
+Chức năng cho phép theo dõi và quản lý danh sách lịch khám của bệnh nhân theo ngày, bác sĩ, ca khám và trạng thái khám. Hệ thống hỗ trợ cập nhật trạng thái khám và điều phối lịch khám trong quá trình vận hành phòng khám.
 
-Tiền điều kiện 
+Tiền điều kiện
 
-- Người dùng đã đăng nhập hệ thống. 
+- Người dùng đã đăng nhập hệ thống.
 
-- Người dùng có quyền theo dõi lịch khám. 
+- Người dùng có quyền theo dõi lịch khám.
 
-- Hệ thống đã có dữ liệu lịch khám. 
+- Hệ thống đã có dữ liệu lịch khám.
 
-- Hệ thống đặt lịch đang hoạt động bình thường. 
+- Hệ thống đặt lịch đang hoạt động bình thường.
 
-Hậu điều kiện 
+Hậu điều kiện
 
-- Danh sách lịch khám được hiển thị chính xác. 
-- Trạng thái lịch khám được cập nhật thành công. 
-- Dữ liệu thay đổi được ghi nhận vào audit log. 
-- Thông tin được đồng bộ với các chức năng liên quan. 
+- Danh sách lịch khám được hiển thị chính xác.
+- Trạng thái lịch khám được cập nhật thành công.
+- Dữ liệu thay đổi được ghi nhận vào audit log.
+- Thông tin được đồng bộ với các chức năng liên quan.
 
-Kích hoạt 
+Kích hoạt
 
-Người dùng chọn chức năng “Theo dõi lịch khám” từ menu quản lý lịch khám. 
+Người dùng chọn chức năng “Theo dõi lịch khám” từ menu quản lý lịch khám.
 
-Luồng chính 
+Luồng chính
 
-1. Người dùng truy cập chức năng “Theo dõi lịch khám”. 
+1. Người dùng truy cập chức năng “Theo dõi lịch khám”.
 
-2. Hệ thống hiển thị danh sách lịch khám trong ngày hiện tại. 
+2. Hệ thống hiển thị danh sách lịch khám trong ngày hiện tại.
 
-3. Người dùng chọn bộ lọc: 
+3. Người dùng chọn bộ lọc:
 
-    - Ngày khám 
+    - Ngày khám
 
-    - Bác sĩ 
+    - Bác sĩ
 
-    - Ca khám 
+    - Ca khám
 
-    - Trạng thái lịch khám 
+    - Trạng thái lịch khám
 
-4. Hệ thống hiển thị danh sách lịch khám phù hợp. 
+4. Hệ thống hiển thị danh sách lịch khám phù hợp.
 
-5. Người dùng chọn một lịch khám cụ thể. 
+5. Người dùng chọn một lịch khám cụ thể.
 
-6. Người dùng cập nhật trạng thái lịch khám. 
+6. Người dùng cập nhật trạng thái lịch khám.
 
-7. Hệ thống lưu trạng thái mới. 
+7. Hệ thống lưu trạng thái mới.
 
-8. Hệ thống cập nhật dữ liệu liên quan. 
+8. Hệ thống cập nhật dữ liệu liên quan.
 
-9. Hiển thị thông báo cập nhật thành công. 
+9. Hiển thị thông báo cập nhật thành công.
 
-Luồng thay thế 
+Luồng thay thế
 
-A1. Không có dữ liệu lịch khám 
-1. Hệ thống không tìm thấy dữ liệu phù hợp. 
-2. Hiển thị danh sách rỗng. 
-3. Hiển thị thông báo “Không có dữ liệu”. 
- 
-A2. Check-in bệnh nhân 
-1. Người dùng chọn lịch khám có trạng thái CONFIRMED. 
-2. Nhấn “Check-in”. 
-3. Hệ thống cập nhật trạng thái thành CHECKED_IN. 
- 
-A3. Hoàn thành khám 
-1. Người dùng chọn lịch khám đang CHECKED_IN. 
-2. Nhấn “Hoàn thành khám”. 
-3. Hệ thống cập nhật trạng thái thành COMPLETED. 
- 
-A4. Đánh dấu bệnh nhân không đến 
-1. Người dùng chọn lịch khám. 
-2. Nhấn “Không đến”. 
-3. Hệ thống cập nhật trạng thái thành NO_SHOW. 
- 
-A5. Hủy lịch khám 
-1. Người dùng chọn lịch khám. 
-2. Nhấn “Hủy lịch”. 
-3. Xác nhận thao tác. 
-4. Hệ thống cập nhật trạng thái thành CANCELLED. 
+A1. Không có dữ liệu lịch khám
 
-Luồng ngoại lệ 
+1. Hệ thống không tìm thấy dữ liệu phù hợp.
+2. Hiển thị danh sách rỗng.
+3. Hiển thị thông báo “Không có dữ liệu”.
 
-E1. Không đủ quyền truy cập 
-1. Người dùng không có quyền theo dõi lịch khám. 
-2. Hệ thống từ chối truy cập chức năng. 
- 
-E2. Lỗi hệ thống hoặc cơ sở dữ liệu 
-1. Hệ thống không thể tải hoặc cập nhật dữ liệu. 
-2. Hiển thị thông báo lỗi. 
-3. Ghi nhận log lỗi hệ thống. 
- 
-E3. Cập nhật trạng thái không hợp lệ 
-1. Người dùng thực hiện chuyển trạng thái không đúng quy trình. 
-2. Hệ thống từ chối cập nhật. 
-3. Hiển thị cảnh báo lỗi. 
- 
-E4. Lịch khám đã bị thay đổi bởi người dùng khác 
-1. Dữ liệu lịch khám đã được cập nhật trước đó. 
-2. Hệ thống yêu cầu tải lại dữ liệu mới nhất. 
-3. Người dùng thực hiện lại thao tác nếu cần. 
+A2. Check-in bệnh nhân
+
+1. Người dùng chọn lịch khám có trạng thái CONFIRMED.
+2. Nhấn “Check-in”.
+3. Hệ thống cập nhật trạng thái thành CHECKED_IN.
+
+A3. Hoàn thành khám
+
+1. Người dùng chọn lịch khám đang CHECKED_IN.
+2. Nhấn “Hoàn thành khám”.
+3. Hệ thống cập nhật trạng thái thành COMPLETED.
+
+A4. Đánh dấu bệnh nhân không đến
+
+1. Người dùng chọn lịch khám.
+2. Nhấn “Không đến”.
+3. Hệ thống cập nhật trạng thái thành NO_SHOW.
+
+A5. Hủy lịch khám
+
+1. Người dùng chọn lịch khám.
+2. Nhấn “Hủy lịch”.
+3. Xác nhận thao tác.
+4. Hệ thống cập nhật trạng thái thành CANCELLED.
+
+Luồng ngoại lệ
+
+E1. Không đủ quyền truy cập
+
+1. Người dùng không có quyền theo dõi lịch khám.
+2. Hệ thống từ chối truy cập chức năng.
+
+E2. Lỗi hệ thống hoặc cơ sở dữ liệu
+
+1. Hệ thống không thể tải hoặc cập nhật dữ liệu.
+2. Hiển thị thông báo lỗi.
+3. Ghi nhận log lỗi hệ thống.
+
+E3. Cập nhật trạng thái không hợp lệ
+
+1. Người dùng thực hiện chuyển trạng thái không đúng quy trình.
+2. Hệ thống từ chối cập nhật.
+3. Hiển thị cảnh báo lỗi.
+
+E4. Lịch khám đã bị thay đổi bởi người dùng khác
+
+1. Dữ liệu lịch khám đã được cập nhật trước đó.
+2. Hệ thống yêu cầu tải lại dữ liệu mới nhất.
+3. Người dùng thực hiện lại thao tác nếu cần.
 
 Yêu cầu đặc biệt  
 
-- Hỗ trợ hiển thị lịch khám dạng danh sách và calendar. 
+- Hỗ trợ hiển thị lịch khám dạng danh sách và calendar.
 
-- Hỗ trợ tìm kiếm nhanh theo tên bệnh nhân hoặc mã lịch khám. 
+- Hỗ trợ tìm kiếm nhanh theo tên bệnh nhân hoặc mã lịch khám.
 
-- Hỗ trợ lọc theo bác sĩ, ngày, ca và trạng thái. 
+- Hỗ trợ lọc theo bác sĩ, ngày, ca và trạng thái.
 
-- Hỗ trợ cập nhật trạng thái theo thời gian thực. 
+- Hỗ trợ cập nhật trạng thái theo thời gian thực.
 
-- Hỗ trợ audit log cho các thao tác cập nhật trạng thái. 
+- Hỗ trợ audit log cho các thao tác cập nhật trạng thái.
 
-- Hệ thống phải hỗ trợ đồng bộ với hồ sơ điều trị và thanh toán. 
+- Hệ thống phải hỗ trợ đồng bộ với hồ sơ điều trị và thanh toán.
 
-Quy tắc nghiệp vụ 
+Quy tắc nghiệp vụ
 
-- Chỉ lịch khám hợp lệ mới được phép cập nhật trạng thái. 
+- Chỉ lịch khám hợp lệ mới được phép cập nhật trạng thái.
 
-- Không được chuyển trạng thái sai quy trình nghiệp vụ. 
+- Không được chuyển trạng thái sai quy trình nghiệp vụ.
 
-- Trạng thái lịch khám bao gồm: 
+- Trạng thái lịch khám bao gồm:
 
-    - PENDING 
+  - PENDING
 
-    - CONFIRMED 
+  - CONFIRMED
 
-    - CHECKED_IN 
+  - CHECKED_IN
 
-    - COMPLETED 
+  - COMPLETED
 
-    - CANCELLED 
+  - CANCELLED
 
-    - NO_SHOW 
+  - NO_SHOW
 
-- Chỉ lịch khám CONFIRMED mới được CHECKED_IN. 
+- Chỉ lịch khám CONFIRMED mới được CHECKED_IN.
 
-- Chỉ lịch khám CHECKED_IN mới được COMPLETED. 
+- Chỉ lịch khám CHECKED_IN mới được COMPLETED.
 
-- Lịch khám CANCELLED hoặc COMPLETED không được chỉnh sửa thông tin thời gian khám. 
+- Lịch khám CANCELLED hoặc COMPLETED không được chỉnh sửa thông tin thời gian khám.
 
-- Không được xóa cứng lịch khám đã phát sinh dữ liệu liên quan. 
+- Không được xóa cứng lịch khám đã phát sinh dữ liệu liên quan.
 
-- Mọi thay đổi trạng thái phải được lưu lịch sử thao tác. 
+- Mọi thay đổi trạng thái phải được lưu lịch sử thao tác.
 
-Đặc tả UC3.1 - Tiếp đón người đến khám (check in) 
+Đặc tả UC3.1 - Tiếp đón người đến khám (check in)
 
- 
+Thuộc tính
 
-Thuộc tính 
+Mô tả
 
-Mô tả 
+Use Case ID
 
-Use Case ID 
+UC3.1
 
-UC3.1 
+Use Case Name
 
-Use Case Name 
+Tiếp đón người đến khám (Check-in)
 
-Tiếp đón người đến khám (Check-in) 
+Tác nhân chính
 
-Tác nhân chính 
+Lễ tân
 
-Lễ tân 
+Tác nhân liên quan
 
-Tác nhân liên quan 
-
-Bệnh nhân, Bác sĩ, Quản lý 
+Bệnh nhân, Bác sĩ, Quản lý
 
 Mô tả  
 
-Chức năng cho phép lễ tân tiếp nhận bệnh nhân đến khám, xác nhận check-in và chuyển bệnh nhân vào danh sách chờ khám của bác sĩ. 
+Chức năng cho phép lễ tân tiếp nhận bệnh nhân đến khám, xác nhận check-in và chuyển bệnh nhân vào danh sách chờ khám của bác sĩ.
 
-Tiền điều kiện 
+Tiền điều kiện
 
-- Người dùng đã đăng nhập hệ thống 
-- Có quyền tiếp đón bệnh nhân 
-- Bệnh nhân có lịch khám hợp lệ hoặc đăng ký khám trực tiếp 
+- Người dùng đã đăng nhập hệ thống
+- Có quyền tiếp đón bệnh nhân
+- Bệnh nhân có lịch khám hợp lệ hoặc đăng ký khám trực tiếp
 
-Hậu điều kiện 
+Hậu điều kiện
 
-- Bệnh nhân được check-in thành công 
+- Bệnh nhân được check-in thành công
 
-- Trạng thái lịch khám chuyển thành CHECKED_IN 
+- Trạng thái lịch khám chuyển thành CHECKED_IN
 
-- Thời gian check-in được ghi nhận 
+- Thời gian check-in được ghi nhận
 
-Kích hoạt 
+Kích hoạt
 
-Bệnh nhân đến phòng khám và yêu cầu làm thủ tục khám bệnh 
+Bệnh nhân đến phòng khám và yêu cầu làm thủ tục khám bệnh
 
-Luồng chính 
+Luồng chính
 
-1. Lễ tân truy cập chức năng “Tiếp đón”. 
+1. Lễ tân truy cập chức năng “Tiếp đón”.
 
-2. Hệ thống hiển thị danh sách lịch khám trong ngày. 
+2. Hệ thống hiển thị danh sách lịch khám trong ngày.
 
-3. Lễ tân tìm bệnh nhân theo mã lịch, SĐT hoặc họ tên. 
+3. Lễ tân tìm bệnh nhân theo mã lịch, SĐT hoặc họ tên.
 
-4. Hệ thống hiển thị thông tin lịch khám. 
+4. Hệ thống hiển thị thông tin lịch khám.
 
-5. Lễ tân xác nhận thông tin bệnh nhân. 
+5. Lễ tân xác nhận thông tin bệnh nhân.
 
-6. Nhấn nút “Check-in”. 
+6. Nhấn nút “Check-in”.
 
-7. Hệ thống cập nhật trạng thái lịch khám thành CHECKED_IN. 
+7. Hệ thống cập nhật trạng thái lịch khám thành CHECKED_IN.
 
-8. Hệ thống ghi nhận thời gian check-in. 
+8. Hệ thống ghi nhận thời gian check-in.
 
-9. Hệ thống thông báo check-in thành công. 
+9. Hệ thống thông báo check-in thành công.
 
-Luồng thay thế 
+Luồng thay thế
 
-A1. Đăng ký khám trực tiếp 
+A1. Đăng ký khám trực tiếp
 
-1. Không tìm thấy lịch hẹn. 
+1. Không tìm thấy lịch hẹn.
 
-2. Lễ tân chọn “Đăng ký khám mới”. 
+2. Lễ tân chọn “Đăng ký khám mới”.
 
-3. Nhập thông tin bệnh nhân. 
+3. Nhập thông tin bệnh nhân.
 
-4. Chọn bác sĩ và ca khám còn trống. 
+4. Chọn bác sĩ và ca khám còn trống.
 
-5. Hệ thống tạo lịch khám mới. 
+5. Hệ thống tạo lịch khám mới.
 
- 
+A2. Bệnh nhân đến trễ
 
-A2. Bệnh nhân đến trễ 
+1. Hệ thống phát hiện quá giờ khám.
 
-1. Hệ thống phát hiện quá giờ khám. 
+2. Hiển thị cảnh báo.
 
-2. Hiển thị cảnh báo. 
+3. Lễ tân xác nhận tiếp tục hoặc dời lịch khám.
 
-3. Lễ tân xác nhận tiếp tục hoặc dời lịch khám. 
+Luồng ngoại lệ
 
-Luồng ngoại lệ 
+E1. Lịch khám đã bị hủy
 
-E1. Lịch khám đã bị hủy 
+- Hệ thống không cho phép check-in.
 
-- Hệ thống không cho phép check-in. 
+E2. Check-in nhiều lần
 
- 
+- Hệ thống hiển thị thông báo “Bệnh nhân đã check-in”.
 
-E2. Check-in nhiều lần 
+E3. Mất kết nối hệ thống
 
-- Hệ thống hiển thị thông báo “Bệnh nhân đã check-in”. 
-
- 
-
-E3. Mất kết nối hệ thống 
-
-- Hiển thị lỗi hệ thống và yêu cầu thử lại. 
+- Hiển thị lỗi hệ thống và yêu cầu thử lại.
 
 Yêu cầu đặc biệt  
 
-- Tìm kiếm bệnh nhân nhanh dưới 2 giây. 
-- Giao diện hỗ trợ tìm kiếm realtime. 
-- Có hỗ trợ responsive trên tablet. 
+- Tìm kiếm bệnh nhân nhanh dưới 2 giây.
+- Giao diện hỗ trợ tìm kiếm realtime.
+- Có hỗ trợ responsive trên tablet.
 
-Quy tắc nghiệp vụ 
+Quy tắc nghiệp vụ
 
-- Chỉ lịch khám CONFIRMED mới được check-in. 
+- Chỉ lịch khám CONFIRMED mới được check-in.
 
-- Không check-in lịch đã CANCELLED. 
+- Không check-in lịch đã CANCELLED.
 
-- Thời gian check-in phải được lưu lại. 
+- Thời gian check-in phải được lưu lại.
 
-- Một lịch khám chỉ được check-in một lần. 
+- Một lịch khám chỉ được check-in một lần.
 
-Đặc tả UC3.2 - Khám bệnh và cập nhật hồ sơ 
+Đặc tả UC3.2 - Khám bệnh và cập nhật hồ sơ
 
- 
+Thuộc tính
 
-Thuộc tính 
+Mô tả
 
-Mô tả 
+Use Case ID
 
-Use Case ID 
+UC3.2
 
-UC3.2 
+Use Case Name
 
-Use Case Name 
+Khám bệnh và cập nhật hồ sơ
 
-Khám bệnh và cập nhật hồ sơ 
+Tác nhân chính
 
-Tác nhân chính 
+Bác sĩ
 
-Bác sĩ 
+Tác nhân liên quan
 
-Tác nhân liên quan 
-
-Bệnh nhân, Lễ tân 
+Bệnh nhân, Lễ tân
 
 Mô tả  
 
-Chức năng cho phép bác sĩ khám bệnh, cập nhật hồ sơ khám, chẩn đoán và chỉ định dịch vụ điều trị. 
+Chức năng cho phép bác sĩ khám bệnh, cập nhật hồ sơ khám, chẩn đoán và chỉ định dịch vụ điều trị.
 
-Tiền điều kiện 
+Tiền điều kiện
 
-- Bệnh nhân đã check-in 
+- Bệnh nhân đã check-in
 
-- Bác sĩ đang trong ca trực 
+- Bác sĩ đang trong ca trực
 
-Hậu điều kiện 
+Hậu điều kiện
 
-- Hồ sơ khám được lưu 
+- Hồ sơ khám được lưu
 
-- Tạo thông tin dịch vụ điều trị 
+- Tạo thông tin dịch vụ điều trị
 
-- Chuyển sang bước thanh toán 
+- Chuyển sang bước thanh toán
 
-Kích hoạt 
+Kích hoạt
 
-Bác sĩ chọn bệnh nhân trong danh sách chờ khám 
+Bác sĩ chọn bệnh nhân trong danh sách chờ khám
 
-Luồng chính 
+Luồng chính
 
-1. Bác sĩ mở danh sách bệnh nhân chờ khám. 
+1. Bác sĩ mở danh sách bệnh nhân chờ khám.
 
-2. Chọn bệnh nhân cần khám. 
+2. Chọn bệnh nhân cần khám.
 
-3. Hệ thống hiển thị hồ sơ bệnh nhân và lịch sử khám. 
+3. Hệ thống hiển thị hồ sơ bệnh nhân và lịch sử khám.
 
-4. Bác sĩ nhập triệu chứng. 
+4. Bác sĩ nhập triệu chứng.
 
-5. Nhập chẩn đoán. 
+5. Nhập chẩn đoán.
 
-6. Chọn dịch vụ điều trị. 
+6. Chọn dịch vụ điều trị.
 
-7. Nhấn “Hoàn tất khám”. 
+7. Nhấn “Hoàn tất khám”.
 
-8. Hệ thống lưu hồ sơ khám. 
+8. Hệ thống lưu hồ sơ khám.
 
-9. Chuyển trạng thái khám thành COMPLETED. 
+9. Chuyển trạng thái khám thành COMPLETED.
 
-Luồng thay thế 
+Luồng thay thế
 
-A1. Lưu tạm hồ sơ 
+A1. Lưu tạm hồ sơ
 
-1. Bác sĩ chọn “Lưu tạm”. 
+1. Bác sĩ chọn “Lưu tạm”.
 
-2. Hệ thống lưu trạng thái IN_PROGRESS. 
+2. Hệ thống lưu trạng thái IN_PROGRESS.
 
- 
+A2. Chuyển bác sĩ khác
 
-A2. Chuyển bác sĩ khác 
+1. Chọn “Chuyển bác sĩ”.
 
-1. Chọn “Chuyển bác sĩ”. 
+2. Chọn bác sĩ mới.
 
-2. Chọn bác sĩ mới. 
+3. Hệ thống cập nhật người khám.
 
-3. Hệ thống cập nhật người khám. 
+Luồng ngoại lệ
 
-Luồng ngoại lệ 
+E1. Thiếu chẩn đoán
 
-E1. Thiếu chẩn đoán 
+- Không cho phép hoàn tất khám.
 
-- Không cho phép hoàn tất khám. 
+E2. Không có quyền truy cập hồ sơ
 
- 
-
-E2. Không có quyền truy cập hồ sơ 
-
-- Hệ thống từ chối truy cập. 
+- Hệ thống từ chối truy cập.
 
 Yêu cầu đặc biệt  
 
-- Hồ sơ khám phải tự động lưu định kỳ. 
+- Hồ sơ khám phải tự động lưu định kỳ.
 
-- Hỗ trợ upload hình ảnh X-ray. 
+- Hỗ trợ upload hình ảnh X-ray.
 
-Quy tắc nghiệp vụ 
+Quy tắc nghiệp vụ
 
-- Hồ sơ khám bắt buộc có chẩn đoán. 
+- Hồ sơ khám bắt buộc có chẩn đoán.
 
-- Bác sĩ chỉ được khám bệnh nhân thuộc ca trực của mình. 
+- Bác sĩ chỉ được khám bệnh nhân thuộc ca trực của mình.
 
-- Lưu lịch sử chỉnh sửa hồ sơ. 
+- Lưu lịch sử chỉnh sửa hồ sơ.
 
-Đặc tả UC3.3 - Thanh toán chi phí khám bệnh 
+Đặc tả UC3.3 - Thanh toán chi phí khám bệnh
 
- 
+Thuộc tính
 
-Thuộc tính 
+Mô tả
 
-Mô tả 
+Use Case ID
 
-Use Case ID 
+UC3.3
 
-UC3.3 
+Use Case Name
 
-Use Case Name 
+Thanh toán chi phí khám bệnh
 
-Thanh toán chi phí khám bệnh 
+Tác nhân chính
 
-Tác nhân chính 
+Lễ tân
 
-Lễ tân 
+Tác nhân liên quan
 
-Tác nhân liên quan 
-
-Bệnh nhân, Quản lý 
+Bệnh nhân, Quản lý
 
 Mô tả  
 
-Chức năng cho phép lễ tân lập hóa đơn, thanh toán và in hóa đơn khám bệnh. 
+Chức năng cho phép lễ tân lập hóa đơn, thanh toán và in hóa đơn khám bệnh.
 
-Tiền điều kiện 
+Tiền điều kiện
 
-- Hồ sơ khám đã hoàn tất 
+- Hồ sơ khám đã hoàn tất
 
-- Có dịch vụ điều trị 
+- Có dịch vụ điều trị
 
-Hậu điều kiện 
+Hậu điều kiện
 
-- Hóa đơn được thanh toán 
+- Hóa đơn được thanh toán
 
-- Cập nhật doanh thu 
+- Cập nhật doanh thu
 
-Kích hoạt 
+Kích hoạt
 
-Bệnh nhân yêu cầu thanh toán 
+Bệnh nhân yêu cầu thanh toán
 
-Luồng chính 
+Luồng chính
 
-1. Lễ tân mở chức năng “Thanh toán”. 
+1. Lễ tân mở chức năng “Thanh toán”.
 
-2. Tìm bệnh nhân. 
+2. Tìm bệnh nhân.
 
-3. Hệ thống hiển thị hóa đơn. 
+3. Hệ thống hiển thị hóa đơn.
 
-4. Kiểm tra danh sách dịch vụ. 
+4. Kiểm tra danh sách dịch vụ.
 
-5. Chọn phương thức thanh toán. 
+5. Chọn phương thức thanh toán.
 
-6. Nhấn “Thanh toán”. 
+6. Nhấn “Thanh toán”.
 
-7. Hệ thống cập nhật trạng thái PAID. 
+7. Hệ thống cập nhật trạng thái PAID.
 
-8. In hóa đơn. 
+8. In hóa đơn.
 
-Luồng thay thế 
+Luồng thay thế
 
-A1. Áp dụng giảm giá 
+A1. Áp dụng giảm giá
 
-1. Nhập mã giảm giá. 
+1. Nhập mã giảm giá.
 
-2. Hệ thống tính lại tổng tiền. 
+2. Hệ thống tính lại tổng tiền.
 
- 
+A2. Thanh toán nhiều phương thức
 
-A2. Thanh toán nhiều phương thức 
+1. Chọn nhiều phương thức.
 
-1. Chọn nhiều phương thức. 
+2. Nhập số tiền từng phương thức.
 
-2. Nhập số tiền từng phương thức. 
-
-Luồng ngoại lệ 
+Luồng ngoại lệ
 
 E1. Chưa hoàn tất khám  
 
-- Không cho thanh toán. 
-
- 
+- Không cho thanh toán.
 
 E2. Thanh toán thất bại  
 
-- Báo lỗi giao dịch. 
-
- 
+- Báo lỗi giao dịch.
 
 E3. Thanh toán trùng  
 
-- Không cho xử lý tiếp. 
+- Không cho xử lý tiếp.
 
 Yêu cầu đặc biệt  
 
-- Hỗ trợ in hóa đơn PDF. 
+- Hỗ trợ in hóa đơn PDF.
 
-- Hỗ trợ QR banking. 
+- Hỗ trợ QR banking.
 
-- Tốc độ xử lý nhanh. 
+- Tốc độ xử lý nhanh.
 
-Quy tắc nghiệp vụ 
+Quy tắc nghiệp vụ
 
-- Chỉ hóa đơn COMPLETED mới được thanh toán. 
+- Chỉ hóa đơn COMPLETED mới được thanh toán.
 
-- Hóa đơn PAID không được chỉnh sửa. 
+- Hóa đơn PAID không được chỉnh sửa.
 
-- Tổng tiền = tổng dịch vụ điều trị. 
+- Tổng tiền = tổng dịch vụ điều trị.
 
-Đặc tả UC3.4 - Thống kê doanh thu 
+Đặc tả UC3.4 - Thống kê doanh thu
 
- 
+Thuộc tính
 
-Thuộc tính 
+Mô tả
 
-Mô tả 
+Use Case ID
 
-Use Case ID 
+UC3.4
 
-UC3.4 
+Use Case Name
 
-Use Case Name 
+Thống kê doanh thu
 
-Thống kê doanh thu 
+Tác nhân chính
 
-Tác nhân chính 
+Quản lý
 
-Quản lý 
+Tác nhân liên quan
 
-Tác nhân liên quan 
-
-Admin 
+Admin
 
 Mô tả  
 
-Chức năng cho phép xem thống kê doanh thu theo thời gian, bác sĩ và dịch vụ. 
+Chức năng cho phép xem thống kê doanh thu theo thời gian, bác sĩ và dịch vụ.
 
-Tiền điều kiện 
+Tiền điều kiện
 
-- Có dữ liệu hóa đơn 
-- Người dùng có quyền thống kê 
+- Có dữ liệu hóa đơn
+- Người dùng có quyền thống kê
 
-Hậu điều kiện 
+Hậu điều kiện
 
-- Hiển thị báo cáo doanh thu 
+- Hiển thị báo cáo doanh thu
 
-Kích hoạt 
+Kích hoạt
 
-Người quản lý truy cập chức năng thống kê 
+Người quản lý truy cập chức năng thống kê
 
-Luồng chính 
+Luồng chính
 
-1. Truy cập “Thống kê doanh thu”. 
-2. Chọn khoảng thời gian. 
-3. Chọn bộ lọc bác sĩ/dịch vụ. 
-4. Nhấn “Thống kê”. 
-5. Hệ thống hiển thị bảng doanh thu. 
-6. Hiển thị biểu đồ thống kê. 
+1. Truy cập “Thống kê doanh thu”.
+2. Chọn khoảng thời gian.
+3. Chọn bộ lọc bác sĩ/dịch vụ.
+4. Nhấn “Thống kê”.
+5. Hệ thống hiển thị bảng doanh thu.
+6. Hiển thị biểu đồ thống kê.
 
-Luồng thay thế 
+Luồng thay thế
 
-A1. Xuất Excel/PDF 
+A1. Xuất Excel/PDF
 
-1. Chọn “Xuất báo cáo”. 
+1. Chọn “Xuất báo cáo”.
 
-2. Hệ thống tạo file tải xuống. 
+2. Hệ thống tạo file tải xuống.
 
- 
+A2. Xem theo tháng/năm
 
-A2. Xem theo tháng/năm 
+1. Chọn kiểu thống kê.
 
-1. Chọn kiểu thống kê. 
+2. Hệ thống cập nhật biểu đồ.
 
-2. Hệ thống cập nhật biểu đồ. 
+Luồng ngoại lệ
 
-Luồng ngoại lệ 
+E1. Không có dữ liệu
 
-E1. Không có dữ liệu 
+- Hiển thị danh sách rỗng.
 
-- Hiển thị danh sách rỗng. 
+E2. Khoảng thời gian không hợp lệ
 
- 
-
-E2. Khoảng thời gian không hợp lệ 
-
-- Báo lỗi. 
+- Báo lỗi.
 
 Yêu cầu đặc biệt  
 
-- Hỗ trợ biểu đồ trực quan. 
+- Hỗ trợ biểu đồ trực quan.
 
-- Export file nhanh. 
+- Export file nhanh.
 
-- Dữ liệu cập nhật realtime. 
+- Dữ liệu cập nhật realtime.
 
-Quy tắc nghiệp vụ 
+Quy tắc nghiệp vụ
 
-- Chỉ tính hóa đơn PAID. 
+- Chỉ tính hóa đơn PAID.
 
-- Không sửa dữ liệu thống kê. 
+- Không sửa dữ liệu thống kê.
 
-- Doanh thu tính theo thời gian thanh toán. 
-
+- Doanh thu tính theo thời gian thanh toán.
