@@ -30,3 +30,5 @@ backend/.env
 docs/testing-plan.md
 backend/.env
 README.md
+docs/uc3-automated-testing-report.md
+qa/selenium-ide/uc3-selenium-ide.side
