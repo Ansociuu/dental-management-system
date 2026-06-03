@@ -12,7 +12,8 @@ const AdminLayout = () => {
     location.pathname.includes('/admin/customers') ||
     location.pathname.includes('/admin/doctor-profile') ? 'Người dùng' : 
     location.pathname.includes('/admin/appointments/') ? 'Lịch hẹn' :
-    location.pathname.includes('/admin/reports') ? 'Báo cáo' : 
+    location.pathname.includes('/admin/reports') ? 'Báo cáo' :
+    location.pathname.includes('/admin/payroll') ? 'Tính lương' :
     location.pathname.includes('/admin/settings') || 
     location.pathname.includes('/admin/shifts') || 
     location.pathname.includes('/admin/holidays') ? 'Cấu hình' : ''
@@ -35,6 +36,22 @@ const AdminLayout = () => {
       ]
     },
     { icon: 'receipt_long', label: 'Thanh toán', path: '/admin/payments', permission: { module: 'payments' } },
+    {
+      icon: 'calculate',
+      label: 'Tính lương',
+      path: '#',
+      isExpandable: true,
+      subItems: [
+        { label: 'Tiền một giờ', path: '/admin/payroll/base-rate', permission: { module: 'payroll' } },
+        { label: 'Hệ số bác sĩ', path: '/admin/payroll/doctor-profiles', permission: { module: 'payroll' } },
+        { label: 'Hệ số ngày/ca', path: '/admin/payroll/shift-rules', permission: { module: 'payroll' } },
+        { label: 'Ca phức tạp', path: '/admin/payroll/complexities', permission: { module: 'payroll' } },
+        { label: 'Phiếu lương bác sĩ', path: '/admin/payroll/payslip', permission: { module: 'payroll' } },
+        { label: 'Tất cả bác sĩ / tháng', path: '/admin/payroll/monthly-report', permission: { module: 'payroll' } },
+        { label: 'Một bác sĩ / năm', path: '/admin/payroll/doctor-year-report', permission: { module: 'payroll' } },
+        { label: 'Tất cả bác sĩ / năm', path: '/admin/payroll/yearly-report', permission: { module: 'payroll' } }
+      ]
+    },
     { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services', permission: { module: 'services' } },
     { 
       icon: 'manage_accounts', 
@@ -148,7 +165,7 @@ const AdminLayout = () => {
                       </span>
                     </button>
                     
-                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === item.label ? 'max-h-60 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === item.label ? 'max-h-[28rem] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
                       <ul className="pl-12 pr-4 space-y-1 py-1">
                         {item.subItems.map((subItem, subIndex) => (
                           <li key={subIndex}>

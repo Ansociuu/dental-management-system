@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
 
 const PROTECTED_USER_ROLES = ['ADMIN', 'MANAGER'];
 
@@ -103,6 +104,14 @@ exports.createUser = async (req, res, next) => {
       avatar: avatar || ''
     });
 
+    if (newUser.role === 'DOCTOR') {
+      await DoctorSalaryProfile.findOneAndUpdate(
+        { doctorId: newUser._id },
+        { $setOnInsert: { doctorId: newUser._id, updatedBy: req.user?._id } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+
     res.status(201).json({ success: true, data: newUser });
   } catch (error) {
     next(error);
@@ -159,6 +168,15 @@ exports.updateUser = async (req, res, next) => {
     if (avatar !== undefined) user.avatar = avatar;
 
     await user.save();
+
+    if (user.role === 'DOCTOR') {
+      await DoctorSalaryProfile.findOneAndUpdate(
+        { doctorId: user._id },
+        { $setOnInsert: { doctorId: user._id, updatedBy: req.user?._id } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+    }
+
     res.json({ success: true, data: user });
   } catch (error) {
     next(error);

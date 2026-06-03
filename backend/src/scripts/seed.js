@@ -12,6 +12,11 @@ const Shift = require('../models/Shift');
 const Patient = require('../models/Patient');
 const Holiday = require('../models/Holiday');
 const DutySchedule = require('../models/DutySchedule');
+const SalarySetting = require('../models/SalarySetting');
+const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
+const ShiftSalaryRule = require('../models/ShiftSalaryRule');
+const AppointmentComplexity = require('../models/AppointmentComplexity');
+const SalaryPayslip = require('../models/SalaryPayslip');
 
 const seedData = async () => {
   try {
@@ -25,6 +30,11 @@ const seedData = async () => {
     await Patient.deleteMany({});
     await Holiday.deleteMany({});
     await DutySchedule.deleteMany({});
+    await SalarySetting.deleteMany({});
+    await DoctorSalaryProfile.deleteMany({});
+    await ShiftSalaryRule.deleteMany({});
+    await AppointmentComplexity.deleteMany({});
+    await SalaryPayslip.deleteMany({});
     console.log('🗑️  Đã xóa dữ liệu cũ');
 
     // 1. Tạo Users (Bác sĩ & Nhân viên)
@@ -41,6 +51,21 @@ const seedData = async () => {
     ]);
     console.log(`👨‍⚕️ Đã tạo ${users.length} tài khoản (${users.filter(u => u.role === 'DOCTOR').length} Bác sĩ)`);
     console.log(`🔑 Mật khẩu mặc định cho tất cả: ${defaultPassword}`);
+
+    const doctorsList = users.filter(u => u.role === 'DOCTOR');
+    await SalarySetting.create({ key: 'BASE_RATE', baseHourlyRate: 210000 });
+    const degreeSamples = [
+      { degreeLevel: 'DOCTORATE', doctorCoefficient: 2.0 },
+      { degreeLevel: 'MASTER', doctorCoefficient: 1.5 },
+      { degreeLevel: 'UNIVERSITY', doctorCoefficient: 1.2 },
+      { degreeLevel: 'ASSOCIATE_PROFESSOR', doctorCoefficient: 2.5 },
+      { degreeLevel: 'PROFESSOR', doctorCoefficient: 3.0 }
+    ];
+    await DoctorSalaryProfile.create(doctorsList.map((doctor, index) => ({
+      doctorId: doctor._id,
+      ...degreeSamples[index % degreeSamples.length]
+    })));
+    console.log(`💰 Đã tạo cấu hình lương mặc định cho ${doctorsList.length} Bác sĩ`);
 
     // 2. Tạo Services (Dịch vụ nha khoa)
     const services = await Service.create([
@@ -86,7 +111,6 @@ const seedData = async () => {
     console.log(`🏖️  Đã tạo ${holidays.length} ngày nghỉ mẫu`);
 
     // 6. Tự động phân lịch trực Bác sĩ cho 30 ngày tiếp theo để dễ dàng kiểm thử đặt lịch
-    const doctorsList = users.filter(u => u.role === 'DOCTOR');
     const dutySchedulesData = [];
 
     // Tạo lịch trực từ hôm nay đến 30 ngày sau

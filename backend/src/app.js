@@ -19,6 +19,7 @@ const permissionRoutes = require("./routes/permissionRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const patientPortalRoutes = require("./routes/patientPortalRoutes");
 const configChangeLogRoutes = require("./routes/configChangeLogRoutes");
+const salaryRoutes = require("./routes/salaryRoutes");
 
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/v1/permissions", permissionRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/patient-portal", patientPortalRoutes);
 app.use("/api/v1/config-change-logs", configChangeLogRoutes);
+app.use("/api/v1/salaries", salaryRoutes);
 
 
 // Middleware xử lý lỗi tập trung (phải đặt sau tất cả routes)

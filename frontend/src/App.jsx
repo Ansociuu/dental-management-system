@@ -26,6 +26,7 @@ import AppointmentMonitor from './pages/admin/AppointmentMonitor';
 import FollowUpCalls from './pages/admin/FollowUpCalls';
 import PaymentManagement from './pages/admin/PaymentManagement';
 import PatientRecord from './pages/admin/PatientRecord';
+import Payroll from './pages/admin/Payroll';
 import AccessDenied from './components/AccessDenied';
 import { hasPermission } from './utils/permissions';
 
@@ -130,6 +131,8 @@ function App() {
             <Route path="appointments/duty-schedules" element={<PermissionRoute module="doctorDuty"><DoctorDutySchedule /></PermissionRoute>} />
             <Route path="appointments/duty-history" element={<PermissionRoute module="doctorDuty"><DutyHistory scope="admin" /></PermissionRoute>} />
             <Route path="payments" element={<PermissionRoute module="payments"><PaymentManagement /></PermissionRoute>} />
+            <Route path="payroll" element={<PermissionRoute module="payroll"><Payroll /></PermissionRoute>} />
+            <Route path="payroll/:section" element={<PermissionRoute module="payroll"><Payroll /></PermissionRoute>} />
             <Route path="users" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
             <Route path="staff" element={<PermissionRoute module="users"><UserManagement /></PermissionRoute>} />
             <Route path="customers" element={<PermissionRoute module="patients"><CustomerManagement /></PermissionRoute>} />

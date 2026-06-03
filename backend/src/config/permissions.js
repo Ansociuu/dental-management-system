@@ -9,6 +9,7 @@ const PERMISSION_MODULES = [
   'users',
   'roles',
   'reports',
+  'payroll',
   'settings',
   'doctorDuty'
 ];
