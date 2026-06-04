@@ -521,6 +521,6 @@ build_sheet(wb, "UC3.2 - Khám bệnh", "Khám bệnh và cập nhật hồ sơ"
 build_sheet(wb, "UC3.3 - Thanh toán chi phí", "Thanh toán chi phí khám bệnh", uc33_categories, "Function")
 build_sheet(wb, "UC3.4 - Thống kê doanh thu", "Thống kê doanh thu", uc34_categories, "Function")
 
-output_path = "G:/Project/Kiểm thử/N01_TH1_NhaKhoa_TestCase.xlsx"
+output_path = "G:/Project/Kiểm thử/TestCase-04-UC.xlsx"
 wb.save(output_path)
 print("Done!")
