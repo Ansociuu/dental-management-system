@@ -90,6 +90,37 @@ const seedData = async () => {
     ]);
     console.log(`⏰ Đã tạo ${shifts.length} ca làm việc`);
 
+    const dayTypeDayOfWeek = {
+      WEEKDAY_OFFICE: -1,
+      WEEKDAY_AFTER_HOURS: -2,
+      SATURDAY: 6,
+      SUNDAY: 0,
+      HOLIDAY: -3
+    };
+    const shiftByName = new Map(shifts.map((shift) => [shift.name, shift]));
+    const defaultShiftSalaryRules = [
+      { dayType: 'WEEKDAY_OFFICE', shiftName: 'Ca Sáng', shiftCoefficient: 1.0 },
+      { dayType: 'WEEKDAY_OFFICE', shiftName: 'Ca Chiều', shiftCoefficient: 1.0 },
+      { dayType: 'WEEKDAY_AFTER_HOURS', shiftName: 'Ca Tối', shiftCoefficient: 1.2 },
+      { dayType: 'SATURDAY', shiftName: 'Ca Sáng', shiftCoefficient: 1.3 },
+      { dayType: 'SATURDAY', shiftName: 'Ca Chiều', shiftCoefficient: 1.3 },
+      { dayType: 'SATURDAY', shiftName: 'Ca Tối', shiftCoefficient: 1.5 },
+      { dayType: 'SUNDAY', shiftName: 'Ca Sáng', shiftCoefficient: 1.3 },
+      { dayType: 'SUNDAY', shiftName: 'Ca Chiều', shiftCoefficient: 1.3 },
+      { dayType: 'SUNDAY', shiftName: 'Ca Tối', shiftCoefficient: 1.5 },
+      { dayType: 'HOLIDAY', shiftName: 'Ca Sáng', shiftCoefficient: 2.0 },
+      { dayType: 'HOLIDAY', shiftName: 'Ca Chiều', shiftCoefficient: 2.0 },
+      { dayType: 'HOLIDAY', shiftName: 'Ca Tối', shiftCoefficient: 2.0 }
+    ];
+    await ShiftSalaryRule.create(defaultShiftSalaryRules.map((rule) => ({
+      shiftId: shiftByName.get(rule.shiftName)._id,
+      dayType: rule.dayType,
+      dayOfWeek: dayTypeDayOfWeek[rule.dayType],
+      shiftCoefficient: rule.shiftCoefficient,
+      status: 'ACTIVE'
+    })));
+    console.log(`💵 Đã tạo ${defaultShiftSalaryRules.length} hệ số ca làm việc mẫu`);
+
     // 4. Tạo Patients (Bệnh nhân mẫu)
     const patients = await Patient.create([
       { patientCode: 'MEC-PT-0001', fullName: 'Trần Thị Thu Thảo', phone: '0987654321', dob: new Date('1995-03-15'), gender: 'Nữ', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },

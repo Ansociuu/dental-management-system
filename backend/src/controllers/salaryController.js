@@ -726,51 +726,83 @@ const getPayslips = async (req, res, next) => {
 const getMonthlySalaryReport = async (req, res, next) => {
   try {
     const period = parseMonth(req.query.month);
-    const [setting, doctors, savedPayslips] = await Promise.all([
-      ensureBaseSetting(),
-      User.find({ role: 'DOCTOR' }).sort({ fullName: 1 }).lean(),
-      SalaryPayslip.find({ month: period.month }).lean()
-    ]);
-    const savedMap = new Map(savedPayslips.map((payslip) => [payslip.doctorId.toString(), payslip]));
+    const statuses = parseReportStatuses(req.query.status);
+    const filter = {
+      month: period.month,
+      status: { $in: statuses }
+    };
+    if (req.query.doctorId) filter.doctorId = req.query.doctorId;
 
-    const rows = await Promise.all(doctors.map(async (doctor) => {
-      const data = await calculatePayslipData({
-        doctorId: doctor._id,
-        doctorDoc: doctor,
-        month: period.month,
-        setting
-      });
-      const saved = savedMap.get(doctor._id.toString());
+    const payslips = await SalaryPayslip.find(filter)
+      .populate('doctorId', 'fullName email phone specialization')
+      .sort({ totalAmount: -1, generatedAt: -1 })
+      .lean();
+
+    const rows = payslips.map((payslip) => {
+      const doctor = payslip.doctorId || {};
       return {
-        ...data,
-        payslipId: saved?._id,
-        status: saved?.status || 'PREVIEW',
-        generatedAt: saved?.generatedAt
+        payslipId: payslip._id,
+        status: payslip.status,
+        generatedAt: payslip.generatedAt,
+        month: payslip.month,
+        doctor: {
+          _id: doctor._id,
+          fullName: doctor.fullName,
+          email: doctor.email,
+          phone: doctor.phone,
+          specialization: doctor.specialization
+        },
+        baseHourlyRate: payslip.baseHourlyRate,
+        doctorDegreeLevel: payslip.doctorDegreeLevel,
+        doctorDegreeLabel: payslip.doctorDegreeLabel,
+        doctorCoefficient: payslip.doctorCoefficient,
+        totalShifts: normalizeNumber(payslip.totalShifts, 0),
+        totalAppointments: normalizeNumber(payslip.totalAppointments, 0),
+        totalWorkingHours: roundHours(payslip.totalWorkingHours),
+        totalConvertedHours: roundHours(payslip.totalConvertedHours),
+        totalAllowance: roundMoney(payslip.totalAllowance),
+        totalDeduction: roundMoney(payslip.totalDeduction),
+        totalAmount: roundMoney(payslip.totalAmount),
+        lines: payslip.lines || []
       };
-    }));
+    });
 
-    const activeRows = rows.filter((row) => row.totalShifts > 0 || row.totalAmount > 0);
-    const totals = activeRows.reduce((acc, row) => {
+    const totals = rows.reduce((acc, row) => {
       acc.totalDoctors += 1;
+      acc.totalPayslips += 1;
       acc.totalShifts += row.totalShifts;
+      acc.totalAppointments += row.totalAppointments;
+      acc.totalWorkingHours += row.totalWorkingHours;
       acc.totalConvertedHours += row.totalConvertedHours;
+      acc.totalAllowance += row.totalAllowance;
+      acc.totalDeduction += row.totalDeduction;
       acc.totalAmount += row.totalAmount;
       return acc;
     }, {
       totalDoctors: 0,
+      totalPayslips: 0,
       totalShifts: 0,
+      totalAppointments: 0,
+      totalWorkingHours: 0,
       totalConvertedHours: 0,
+      totalAllowance: 0,
+      totalDeduction: 0,
       totalAmount: 0
     });
 
     res.json({
       success: true,
-      data: activeRows,
+      data: rows,
       summary: {
         ...totals,
+        totalWorkingHours: roundHours(totals.totalWorkingHours),
         totalConvertedHours: roundHours(totals.totalConvertedHours),
+        totalAllowance: roundMoney(totals.totalAllowance),
+        totalDeduction: roundMoney(totals.totalDeduction),
         totalAmount: roundMoney(totals.totalAmount)
-      }
+      },
+      month: period.month,
+      statusFilter: statuses
     });
   } catch (error) {
     next(error);
@@ -984,34 +1016,22 @@ const getDoctorYearlySalaryReport = async (req, res, next) => {
       throw createHttpError('Bác sĩ và năm báo cáo là bắt buộc.');
     }
 
-    const [setting, doctor] = await Promise.all([
-      ensureBaseSetting(),
-      User.findOne({ _id: doctorId, role: 'DOCTOR' }).lean()
-    ]);
+    const doctor = await User.findOne({ _id: doctorId, role: 'DOCTOR' }).lean();
     if (!doctor) {
       throw createHttpError('Không tìm thấy bác sĩ.', 404);
     }
 
-    const months = await Promise.all(Array.from({ length: 12 }, (_, index) => (
-      calculatePayslipData({
-        doctorId,
-        doctorDoc: doctor,
-        month: monthFromYear(year, index),
-        setting
-      })
-    )));
-
-    const summary = months.reduce((acc, row) => {
-      acc.totalShifts += row.totalShifts;
-      acc.totalConvertedHours += row.totalConvertedHours;
-      acc.totalAmount += row.totalAmount;
-      return acc;
-    }, { totalShifts: 0, totalConvertedHours: 0, totalAmount: 0 });
+    const report = await buildYearlyPayslipReport({
+      year,
+      doctorId,
+      status: req.query.status
+    });
+    const doctorRow = report.rows[0];
 
     res.json({
       success: true,
       data: {
-        doctor: {
+        doctor: doctorRow?.doctor || {
           _id: doctor._id,
           fullName: doctor.fullName,
           email: doctor.email,
@@ -1019,12 +1039,35 @@ const getDoctorYearlySalaryReport = async (req, res, next) => {
           specialization: doctor.specialization
         },
         year,
-        months,
-        summary: {
-          totalShifts: summary.totalShifts,
-          totalConvertedHours: roundHours(summary.totalConvertedHours),
-          totalAmount: roundMoney(summary.totalAmount)
-        }
+        months: doctorRow?.months || Array.from({ length: 12 }, (_, index) => ({
+          month: monthFromYear(year, index),
+          payslipId: null,
+          status: null,
+          totalShifts: 0,
+          totalWorkingHours: 0,
+          totalConvertedHours: 0,
+          totalAllowance: 0,
+          totalDeduction: 0,
+          totalAmount: 0
+        })),
+        summary: doctorRow ? {
+          totalPayslips: doctorRow.totalPayslips,
+          totalShifts: doctorRow.totalShifts,
+          totalWorkingHours: doctorRow.totalWorkingHours,
+          totalConvertedHours: doctorRow.totalConvertedHours,
+          totalAllowance: doctorRow.totalAllowance,
+          totalDeduction: doctorRow.totalDeduction,
+          totalAmount: doctorRow.totalAmount
+        } : {
+          totalPayslips: 0,
+          totalShifts: 0,
+          totalWorkingHours: 0,
+          totalConvertedHours: 0,
+          totalAllowance: 0,
+          totalDeduction: 0,
+          totalAmount: 0
+        },
+        statusFilter: report.statusFilter
       }
     });
   } catch (error) {
@@ -1035,72 +1078,15 @@ const getDoctorYearlySalaryReport = async (req, res, next) => {
 const getYearlySalaryReport = async (req, res, next) => {
   try {
     const year = Number(req.query.year);
-    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-      throw createHttpError('Năm báo cáo không hợp lệ.');
-    }
-
-    const [setting, doctors] = await Promise.all([
-      ensureBaseSetting(),
-      User.find({ role: 'DOCTOR' }).sort({ fullName: 1 }).lean()
-    ]);
-
-    const months = [];
-
-    for (let index = 0; index < 12; index += 1) {
-      const month = monthFromYear(year, index);
-      const rows = await Promise.all(doctors.map((doctor) => (
-        calculatePayslipData({
-          doctorId: doctor._id,
-          doctorDoc: doctor,
-          month,
-          setting
-        })
-      )));
-
-      const activeRows = rows.filter((row) => row.totalShifts > 0 || row.totalAmount > 0);
-      const summary = activeRows.reduce((acc, row) => {
-        acc.totalDoctors += 1;
-        acc.totalShifts += row.totalShifts;
-        acc.totalConvertedHours += row.totalConvertedHours;
-        acc.totalAmount += row.totalAmount;
-        return acc;
-      }, {
-        totalDoctors: 0,
-        totalShifts: 0,
-        totalConvertedHours: 0,
-        totalAmount: 0
-      });
-
-      months.push({
-        month,
-        rows: activeRows,
-        summary: {
-          totalDoctors: summary.totalDoctors,
-          totalShifts: summary.totalShifts,
-          totalConvertedHours: roundHours(summary.totalConvertedHours),
-          totalAmount: roundMoney(summary.totalAmount)
-        }
-      });
-    }
-
-    const yearlySummary = months.reduce((acc, item) => {
-      acc.totalShifts += item.summary.totalShifts;
-      acc.totalConvertedHours += item.summary.totalConvertedHours;
-      acc.totalAmount += item.summary.totalAmount;
-      return acc;
-    }, { totalShifts: 0, totalConvertedHours: 0, totalAmount: 0 });
+    const report = await buildYearlyPayslipReport({
+      year,
+      doctorId: req.query.doctorId,
+      status: req.query.status
+    });
 
     res.json({
       success: true,
-      data: {
-        year,
-        months,
-        summary: {
-          totalShifts: yearlySummary.totalShifts,
-          totalConvertedHours: roundHours(yearlySummary.totalConvertedHours),
-          totalAmount: roundMoney(yearlySummary.totalAmount)
-        }
-      }
+      data: report
     });
   } catch (error) {
     next(error);

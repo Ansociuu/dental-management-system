@@ -52,6 +52,26 @@ const formatDate = (date) => {
 
 const getDoctorName = (doctor) => doctor?.fullName || doctor?.doctor?.fullName || '-';
 const toNumericInput = (value) => Number(String(value ?? '').replace(/[^0-9.]/g, ''));
+const payslipStatusLabels = {
+  APPROVED: 'Đã duyệt',
+  PAID: 'Đã thanh toán',
+  DRAFT: 'Nháp',
+  FINALIZED: 'Đã chốt',
+  CANCELLED: 'Đã hủy'
+};
+const getPayslipStatusLabel = (status) => payslipStatusLabels[status] || '-';
+const downloadCsv = (filename, headers, rows) => {
+  const csv = [headers, ...rows]
+    .map((line) => line.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
 
 const payrollRouteMap = {
   baseRate: 'base-rate',
@@ -378,13 +398,13 @@ const ShiftCoefficientSettings = () => {
     load();
   }, []);
 
-  const updateRule = (shiftId, dayOfWeek, value) => {
+  const updateRule = (shiftId, dayType, value) => {
     setMatrix((prev) => prev.map((group) => {
       if (group.shift._id !== shiftId) return group;
       return {
         ...group,
         rules: group.rules.map((rule) => (
-          rule.dayOfWeek === dayOfWeek ? { ...rule, shiftCoefficient: value } : rule
+          rule.dayType === dayType ? { ...rule, shiftCoefficient: value } : rule
         ))
       };
     }));
@@ -397,7 +417,7 @@ const ShiftCoefficientSettings = () => {
       setSuccess('');
       const rules = matrix.flatMap((group) => group.rules.map((rule) => ({
         shiftId: group.shift._id,
-        dayOfWeek: rule.dayOfWeek,
+        dayType: rule.dayType,
         shiftCoefficient: Number(rule.shiftCoefficient)
       })));
       await updateSalaryShiftRules(rules);
@@ -442,7 +462,7 @@ const ShiftCoefficientSettings = () => {
                 <tr>
                   <th className="px-5 py-4 font-black min-w-[180px]">Ca làm việc</th>
                   {matrix[0]?.rules.map((rule) => (
-                    <th key={rule.dayOfWeek} className="px-3 py-4 font-black text-center min-w-[110px]">{rule.label}</th>
+                    <th key={rule.dayType} className="px-3 py-4 font-black text-center min-w-[150px]">{rule.label}</th>
                   ))}
                 </tr>
               </thead>
@@ -454,13 +474,13 @@ const ShiftCoefficientSettings = () => {
                       <p className="text-xs font-semibold text-slate-500 mt-1">{group.shift.startTime} - {group.shift.endTime}</p>
                     </td>
                     {group.rules.map((rule) => (
-                      <td key={rule.dayOfWeek} className="px-3 py-4 text-center">
+                      <td key={rule.dayType} className="px-3 py-4 text-center">
                         <input
                           type="number"
-                          min="0"
+                          min="1"
                           step="0.1"
                           value={rule.shiftCoefficient}
-                          onChange={(event) => updateRule(group.shift._id, rule.dayOfWeek, event.target.value)}
+                          onChange={(event) => updateRule(group.shift._id, rule.dayType, event.target.value)}
                           className="w-20 px-2 py-2 border border-slate-200 rounded-xl text-sm font-black text-center focus:outline-none focus:border-blue-500"
                         />
                       </td>
@@ -702,21 +722,52 @@ const DoctorMonthlyPayslip = () => {
     }
   };
 
+  const exportPayslipCsv = () => {
+    if (!payslip) return;
+    downloadCsv(`phieu-luong-${payslip.doctor?.fullName || 'bac-si'}-${payslip.month}.csv`, [
+      'Ngày',
+      'Ca làm',
+      'Loại ngày',
+      'Giờ làm',
+      'Hệ số ca',
+      'Hệ số bệnh nhân',
+      'Giờ quy đổi',
+      'Thành tiền'
+    ], (payslip.lines || []).map((line) => [
+      formatDate(line.date),
+      line.shiftName || '',
+      line.dayTypeLabel || '',
+      line.workingHours || 0,
+      line.shiftCoefficient || 0,
+      line.patientComplexityTotal || 0,
+      line.convertedHours || 0,
+      line.amount || 0
+    ]));
+  };
+
   return (
     <div>
       <PanelHeader
         eyebrow="Phiếu lương bác sĩ"
         title="Lập phiếu lương cho một bác sĩ trong một tháng"
         actions={(
-          <button
-            type="button"
-            onClick={generate}
-            disabled={submitting || !doctorId}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-sm font-black shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[18px]">request_quote</span>
-            {submitting ? 'Đang lập...' : 'Lập phiếu lương'}
-          </button>
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <button
+              type="button"
+              onClick={generate}
+              disabled={submitting || !doctorId}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-sm font-black shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">request_quote</span>
+              {submitting ? 'Đang lập...' : 'Lập phiếu lương'}
+            </button>
+            <button type="button" onClick={exportPayslipCsv} disabled={!payslip} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+            <button type="button" onClick={() => window.print()} disabled={!payslip} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="In / PDF">
+              <span className="material-symbols-outlined text-[20px]">print</span>
+            </button>
+          </div>
         )}
       />
       <Alert>{error}</Alert>
@@ -825,16 +876,30 @@ const DoctorMonthlyPayslip = () => {
 
 const MonthlySalaryReport = () => {
   const [month, setMonth] = useState(currentMonth());
+  const [doctorId, setDoctorId] = useState('ALL');
+  const [status, setStatus] = useState('ALL');
+  const [doctors, setDoctors] = useState([]);
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const loadDoctors = async () => {
+    try {
+      const res = await getSalaryDoctorProfiles();
+      setDoctors(res.data || []);
+    } catch (err) {
+      setError(err.message || 'Không thể tải danh sách bác sĩ');
+    }
+  };
+
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await getSalaryMonthlyReport({ month });
+      const params = { month, status };
+      if (doctorId !== 'ALL') params.doctorId = doctorId;
+      const res = await getSalaryMonthlyReport(params);
       setRows(res.data || []);
       setSummary(res.summary || null);
     } catch (err) {
@@ -845,14 +910,47 @@ const MonthlySalaryReport = () => {
   };
 
   useEffect(() => {
+    loadDoctors();
+  }, []);
+
+  useEffect(() => {
     load();
-  }, [month]);
+  }, [month, doctorId, status]);
 
   const chartData = rows.map((row) => ({
     name: row.doctor?.fullName || '-',
     amount: row.totalAmount,
     hours: row.totalConvertedHours
   }));
+  const hasReportData = rows.length > 0;
+
+  const exportCsv = () => {
+    downloadCsv(`bao-cao-luong-thang-${month}.csv`, [
+      'Bác sĩ',
+      'Email',
+      'Tháng',
+      'Trạng thái',
+      'Số ca',
+      'Số bệnh nhân',
+      'Giờ làm',
+      'Giờ quy đổi',
+      'Phụ cấp',
+      'Khấu trừ',
+      'Tổng lương'
+    ], rows.map((row) => [
+      row.doctor?.fullName || '',
+      row.doctor?.email || '',
+      row.month || month,
+      getPayslipStatusLabel(row.status),
+      row.totalShifts || 0,
+      row.totalAppointments || 0,
+      row.totalWorkingHours || 0,
+      row.totalConvertedHours || 0,
+      row.totalAllowance || 0,
+      row.totalDeduction || 0,
+      row.totalAmount || 0
+    ]));
+  };
 
   return (
     <div>
@@ -860,30 +958,56 @@ const MonthlySalaryReport = () => {
         eyebrow="Tất cả bác sĩ / tháng"
         title="Báo cáo tiền lương tất cả bác sĩ trong một tháng"
         actions={(
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-3">
             <input
               type="month"
               value={month}
               onChange={(event) => setMonth(event.target.value)}
               className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             />
-            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl">
+            <select
+              value={doctorId}
+              onChange={(event) => setDoctorId(event.target.value)}
+              className="min-w-[220px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">Tất cả bác sĩ</option>
+              {doctors.map((row) => (
+                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+              ))}
+            </select>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">APPROVED + PAID</option>
+              <option value="APPROVED">Đã duyệt</option>
+              <option value="PAID">Đã thanh toán</option>
+            </select>
+            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl" title="Xem báo cáo">
               <span className="material-symbols-outlined text-[20px]">refresh</span>
+            </button>
+            <button type="button" onClick={exportCsv} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+            <button type="button" onClick={() => window.print()} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="In / PDF">
+              <span className="material-symbols-outlined text-[20px]">print</span>
             </button>
           </div>
         )}
       />
       <Alert>{error}</Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-        <StatCard icon="groups" label="Bác sĩ có ca" value={summary?.totalDoctors || 0} tone="blue" />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
+        <StatCard icon="groups" label="Bác sĩ có phiếu" value={summary?.totalDoctors || 0} tone="blue" />
+        <StatCard icon="description" label="Phiếu hợp lệ" value={summary?.totalPayslips || 0} tone="amber" />
         <StatCard icon="event_available" label="Tổng ca" value={summary?.totalShifts || 0} tone="amber" />
-        <StatCard icon="schedule" label="Giờ quy đổi" value={formatNumber(summary?.totalConvertedHours)} tone="violet" />
+        <StatCard icon="schedule" label="Giờ làm" value={formatNumber(summary?.totalWorkingHours)} tone="violet" />
         <StatCard icon="payments" label="Tổng lương" value={formatCurrency(summary?.totalAmount)} tone="emerald" />
       </div>
 
       <Panel className="p-5 mb-5">
-        {loading ? <LoadingState /> : chartData.length === 0 ? <EmptyState icon="bar_chart" label="Chưa có dữ liệu báo cáo" /> : (
+        {loading ? <LoadingState /> : !hasReportData ? <EmptyState icon="bar_chart" label="Không có phiếu lương hợp lệ trong tháng được chọn" /> : (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
@@ -916,22 +1040,30 @@ const ReportTable = ({ rows, loading }) => (
           <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
             <tr>
               <th className="px-5 py-4 font-black min-w-[220px]">Bác sĩ</th>
-              <th className="px-5 py-4 font-black min-w-[120px]">Số ca</th>
+              <th className="px-5 py-4 font-black min-w-[120px]">Trạng thái</th>
+              <th className="px-5 py-4 font-black min-w-[100px]">Số ca</th>
+              <th className="px-5 py-4 font-black min-w-[120px]">Giờ làm</th>
               <th className="px-5 py-4 font-black min-w-[140px]">Giờ quy đổi</th>
-              <th className="px-5 py-4 font-black min-w-[150px]">Hệ số</th>
+              <th className="px-5 py-4 font-black min-w-[150px]">Hệ số bác sĩ</th>
+              <th className="px-5 py-4 font-black text-right min-w-[130px]">Phụ cấp</th>
+              <th className="px-5 py-4 font-black text-right min-w-[130px]">Khấu trừ</th>
               <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((row) => (
-              <tr key={row.doctor?._id || row.month} className="hover:bg-blue-50/30">
+              <tr key={row.payslipId || row.doctor?._id || row.month} className="hover:bg-blue-50/30">
                 <td className="px-5 py-4">
                   <p className="font-black text-slate-900">BS. {getDoctorName(row.doctor)}</p>
                   <p className="text-xs font-semibold text-slate-500 mt-1">{row.month}</p>
                 </td>
+                <td className="px-5 py-4 font-bold text-slate-700">{getPayslipStatusLabel(row.status)}</td>
                 <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
                 <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
                 <td className="px-5 py-4 font-bold text-slate-700">{row.doctorDegreeLabel} • {row.doctorCoefficient}</td>
+                <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalAllowance)}</td>
+                <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalDeduction)}</td>
                 <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
               </tr>
             ))}
@@ -945,6 +1077,7 @@ const ReportTable = ({ rows, loading }) => (
 const DoctorYearlySalaryReport = () => {
   const [year, setYear] = useState(currentYear());
   const [doctorId, setDoctorId] = useState('');
+  const [status, setStatus] = useState('ALL');
   const [doctors, setDoctors] = useState([]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -970,7 +1103,7 @@ const DoctorYearlySalaryReport = () => {
     try {
       setLoading(true);
       setError('');
-      const res = await getSalaryDoctorYearlyReport({ doctorId, year });
+      const res = await getSalaryDoctorYearlyReport({ doctorId, year, status });
       setReport(res.data);
     } catch (err) {
       setError(err.message || 'Không thể tải báo cáo năm của bác sĩ');
@@ -981,14 +1114,36 @@ const DoctorYearlySalaryReport = () => {
 
   useEffect(() => {
     load();
-  }, [doctorId, year]);
+  }, [doctorId, year, status]);
 
   const rows = report?.months || [];
+  const hasReportData = rows.some((row) => row.payslipId || row.totalAmount > 0);
   const chartData = rows.map((row) => ({
     month: row.month.slice(5),
     amount: row.totalAmount,
     hours: row.totalConvertedHours
   }));
+  const exportCsv = () => {
+    downloadCsv(`bao-cao-luong-${report?.doctor?.fullName || 'bac-si'}-${year}.csv`, [
+      'Tháng',
+      'Trạng thái',
+      'Số ca',
+      'Giờ làm',
+      'Giờ quy đổi',
+      'Phụ cấp',
+      'Khấu trừ',
+      'Tổng lương'
+    ], rows.map((row) => [
+      row.month,
+      getPayslipStatusLabel(row.status),
+      row.totalShifts || 0,
+      row.totalWorkingHours || 0,
+      row.totalConvertedHours || 0,
+      row.totalAllowance || 0,
+      row.totalDeduction || 0,
+      row.totalAmount || 0
+    ]));
+  };
 
   return (
     <div>
@@ -1012,19 +1167,40 @@ const DoctorYearlySalaryReport = () => {
               onChange={(event) => setYear(event.target.value)}
               className="w-32 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             />
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">APPROVED + PAID</option>
+              <option value="APPROVED">Đã duyệt</option>
+              <option value="PAID">Đã thanh toán</option>
+            </select>
+            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl" title="Xem báo cáo">
+              <span className="material-symbols-outlined text-[20px]">refresh</span>
+            </button>
+            <button type="button" onClick={exportCsv} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+            <button type="button" onClick={() => window.print()} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="In / PDF">
+              <span className="material-symbols-outlined text-[20px]">print</span>
+            </button>
           </div>
         )}
       />
       <Alert>{error}</Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-5">
+        <StatCard icon="description" label="Phiếu hợp lệ" value={report?.summary?.totalPayslips || 0} tone="amber" />
         <StatCard icon="event_available" label="Tổng ca" value={report?.summary?.totalShifts || 0} tone="blue" />
-        <StatCard icon="schedule" label="Giờ quy đổi" value={formatNumber(report?.summary?.totalConvertedHours)} tone="violet" />
+        <StatCard icon="schedule" label="Giờ làm" value={formatNumber(report?.summary?.totalWorkingHours)} tone="violet" />
+        <StatCard icon="payments" label="Phụ cấp" value={formatCurrency(report?.summary?.totalAllowance)} tone="blue" />
+        <StatCard icon="remove_circle" label="Khấu trừ" value={formatCurrency(report?.summary?.totalDeduction)} tone="amber" />
         <StatCard icon="payments" label="Tổng lương năm" value={formatCurrency(report?.summary?.totalAmount)} tone="emerald" />
       </div>
 
       <Panel className="p-5 mb-5">
-        {loading ? <LoadingState /> : chartData.length === 0 ? <EmptyState icon="show_chart" label="Chưa có dữ liệu năm" /> : (
+        {loading ? <LoadingState /> : !hasReportData ? <EmptyState icon="show_chart" label="Không có phiếu lương hợp lệ của bác sĩ trong năm đã chọn" /> : (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -1040,22 +1216,73 @@ const DoctorYearlySalaryReport = () => {
         )}
       </Panel>
 
-      <ReportTable rows={rows} loading={loading} />
+      <Panel className="overflow-hidden">
+        {loading ? (
+          <LoadingState />
+        ) : !hasReportData ? (
+          <EmptyState icon="calendar_month" label="Không có dữ liệu báo cáo" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                <tr>
+                  <th className="px-5 py-4 font-black min-w-[120px]">Tháng</th>
+                  <th className="px-5 py-4 font-black min-w-[130px]">Trạng thái</th>
+                  <th className="px-5 py-4 font-black min-w-[100px]">Số ca</th>
+                  <th className="px-5 py-4 font-black min-w-[120px]">Giờ làm</th>
+                  <th className="px-5 py-4 font-black min-w-[140px]">Giờ quy đổi</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[130px]">Phụ cấp</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[130px]">Khấu trừ</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => (
+                  <tr key={row.month} className="hover:bg-blue-50/30">
+                    <td className="px-5 py-4 font-black text-slate-900">{row.month}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{getPayslipStatusLabel(row.status)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
+                    <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalAllowance)}</td>
+                    <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalDeduction)}</td>
+                    <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </div>
   );
 };
 
 const YearlySalaryReport = () => {
   const [year, setYear] = useState(currentYear());
+  const [doctorId, setDoctorId] = useState('ALL');
+  const [status, setStatus] = useState('ALL');
+  const [doctors, setDoctors] = useState([]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const loadDoctors = async () => {
+    try {
+      const res = await getSalaryDoctorProfiles();
+      setDoctors(res.data || []);
+    } catch (err) {
+      setError(err.message || 'Không thể tải danh sách bác sĩ');
+    }
+  };
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await getSalaryYearlyReport({ year });
+      const params = { year, status };
+      if (doctorId !== 'ALL') params.doctorId = doctorId;
+      const res = await getSalaryYearlyReport(params);
       setReport(res.data);
     } catch (err) {
       setError(err.message || 'Không thể tải báo cáo năm');
@@ -1065,15 +1292,60 @@ const YearlySalaryReport = () => {
   };
 
   useEffect(() => {
-    load();
-  }, [year]);
+    loadDoctors();
+  }, []);
 
+  useEffect(() => {
+    load();
+  }, [year, doctorId, status]);
+
+  const rows = report?.rows || [];
   const months = report?.months || [];
   const chartData = months.map((month) => ({
     month: month.month.slice(5),
-    amount: month.summary.totalAmount,
-    doctors: month.summary.totalDoctors
+    amount: month.totalAmount,
+    doctors: month.totalDoctors
   }));
+  const hasReportData = rows.length > 0;
+
+  const exportCsv = () => {
+    const headers = [
+      'Bác sĩ',
+      'Email',
+      'Số phiếu',
+      'Tổng ca',
+      'Giờ làm',
+      'Giờ quy đổi',
+      'Hệ số ca TB',
+      'Tổng hệ số phức tạp',
+      'Phụ cấp',
+      'Khấu trừ',
+      'Tổng lương'
+    ];
+    const csvRows = rows.map((row) => [
+      row.doctor?.fullName || '',
+      row.doctor?.email || '',
+      row.totalPayslips || 0,
+      row.totalShifts || 0,
+      row.totalWorkingHours || 0,
+      row.totalConvertedHours || 0,
+      row.averageShiftCoefficient || 0,
+      row.totalComplexityCoefficient || 0,
+      row.totalAllowance || 0,
+      row.totalDeduction || 0,
+      row.totalAmount || 0
+    ]);
+    const csv = [headers, ...csvRows]
+      .map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bao-cao-luong-bac-si-${year}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div>
@@ -1081,29 +1353,55 @@ const YearlySalaryReport = () => {
         eyebrow="Tất cả bác sĩ / năm"
         title="Báo cáo tiền lương tất cả bác sĩ trong một năm"
         actions={(
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-3">
             <input
               type="number"
               value={year}
               onChange={(event) => setYear(event.target.value)}
               className="w-32 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             />
-            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl">
+            <select
+              value={doctorId}
+              onChange={(event) => setDoctorId(event.target.value)}
+              className="min-w-[220px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">Tất cả bác sĩ</option>
+              {doctors.map((row) => (
+                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+              ))}
+            </select>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">APPROVED + PAID</option>
+              <option value="APPROVED">Đã duyệt</option>
+              <option value="PAID">Đã thanh toán</option>
+            </select>
+            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl" title="Xem báo cáo">
               <span className="material-symbols-outlined text-[20px]">refresh</span>
+            </button>
+            <button type="button" onClick={exportCsv} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+            <button type="button" onClick={() => window.print()} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="In / PDF">
+              <span className="material-symbols-outlined text-[20px]">print</span>
             </button>
           </div>
         )}
       />
       <Alert>{error}</Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+        <StatCard icon="groups" label="Bác sĩ trong báo cáo" value={report?.summary?.totalDoctors || 0} tone="blue" />
+        <StatCard icon="description" label="Phiếu hợp lệ" value={report?.summary?.totalPayslips || 0} tone="amber" />
         <StatCard icon="event_available" label="Tổng ca năm" value={report?.summary?.totalShifts || 0} tone="blue" />
-        <StatCard icon="schedule" label="Giờ quy đổi" value={formatNumber(report?.summary?.totalConvertedHours)} tone="violet" />
         <StatCard icon="payments" label="Tổng lương năm" value={formatCurrency(report?.summary?.totalAmount)} tone="emerald" />
       </div>
 
       <Panel className="p-5 mb-5">
-        {loading ? <LoadingState /> : chartData.length === 0 ? <EmptyState icon="bar_chart" label="Chưa có dữ liệu năm" /> : (
+        {loading ? <LoadingState /> : !hasReportData ? <EmptyState icon="bar_chart" label="Chưa có phiếu lương hợp lệ trong bộ lọc" /> : (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
@@ -1122,16 +1420,62 @@ const YearlySalaryReport = () => {
       <Panel className="overflow-hidden">
         {loading ? (
           <LoadingState />
-        ) : months.length === 0 ? (
+        ) : !hasReportData ? (
           <EmptyState icon="calendar_month" label="Không có dữ liệu báo cáo" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
                 <tr>
+                  <th className="px-5 py-4 font-black min-w-[220px]">Bác sĩ</th>
+                  <th className="px-5 py-4 font-black min-w-[120px]">Phiếu</th>
+                  <th className="px-5 py-4 font-black min-w-[120px]">Tổng ca</th>
+                  <th className="px-5 py-4 font-black min-w-[140px]">Giờ làm</th>
+                  <th className="px-5 py-4 font-black min-w-[150px]">Giờ quy đổi</th>
+                  <th className="px-5 py-4 font-black min-w-[150px]">Hệ số ca TB</th>
+                  <th className="px-5 py-4 font-black min-w-[150px]">Hệ số phức tạp</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[140px]">Phụ cấp</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[140px]">Khấu trừ</th>
+                  <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương năm</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => (
+                  <tr key={row.doctor?._id || row.doctor?.fullName} className="hover:bg-blue-50/30">
+                    <td className="px-5 py-4">
+                      <p className="font-black text-slate-900">BS. {row.doctor?.fullName || '-'}</p>
+                      <p className="text-xs font-semibold text-slate-500 mt-1">{row.doctor?.specialization || row.doctor?.email || '-'}</p>
+                    </td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{row.totalPayslips}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.averageShiftCoefficient)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalComplexityCoefficient)}</td>
+                    <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalAllowance)}</td>
+                    <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalDeduction)}</td>
+                    <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      {hasReportData && (
+        <Panel className="overflow-hidden mt-5">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="font-black text-slate-900">Tổng hợp theo tháng</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                <tr>
                   <th className="px-5 py-4 font-black min-w-[120px]">Tháng</th>
-                  <th className="px-5 py-4 font-black min-w-[140px]">Bác sĩ có ca</th>
-                  <th className="px-5 py-4 font-black min-w-[140px]">Tổng ca</th>
+                  <th className="px-5 py-4 font-black min-w-[140px]">Bác sĩ có phiếu</th>
+                  <th className="px-5 py-4 font-black min-w-[120px]">Tổng ca</th>
+                  <th className="px-5 py-4 font-black min-w-[140px]">Giờ làm</th>
                   <th className="px-5 py-4 font-black min-w-[150px]">Giờ quy đổi</th>
                   <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương</th>
                 </tr>
@@ -1140,17 +1484,18 @@ const YearlySalaryReport = () => {
                 {months.map((month) => (
                   <tr key={month.month} className="hover:bg-blue-50/30">
                     <td className="px-5 py-4 font-black text-slate-900">{month.month}</td>
-                    <td className="px-5 py-4 font-bold text-slate-700">{month.summary.totalDoctors}</td>
-                    <td className="px-5 py-4 font-bold text-slate-700">{month.summary.totalShifts}</td>
-                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(month.summary.totalConvertedHours)}</td>
-                    <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(month.summary.totalAmount)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{month.totalDoctors}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{month.totalShifts}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(month.totalWorkingHours)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(month.totalConvertedHours)}</td>
+                    <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(month.totalAmount)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </Panel>
+        </Panel>
+      )}
     </div>
   );
 };
