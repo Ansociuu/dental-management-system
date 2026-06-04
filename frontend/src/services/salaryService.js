@@ -2,9 +2,9 @@ import apiFetch from './api';
 
 export const getSalaryBaseRate = () => apiFetch('/salaries/settings/base-rate');
 
-export const updateSalaryBaseRate = (baseHourlyRate) => apiFetch('/salaries/settings/base-rate', {
+export const updateSalaryBaseRate = (data) => apiFetch('/salaries/settings/base-rate', {
   method: 'PUT',
-  body: JSON.stringify({ baseHourlyRate })
+  body: JSON.stringify(typeof data === 'object' ? data : { baseHourlyRate: data })
 });
 
 export const getSalaryDoctorProfiles = () => apiFetch('/salaries/doctor-profiles');

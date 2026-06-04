@@ -20,6 +20,7 @@ const salaryShiftLineSchema = new mongoose.Schema({
   startTime: { type: String },
   endTime: { type: String },
   workingHours: { type: Number, default: 0 },
+  baseHourlyRate: { type: Number, default: 0 },
   shiftCoefficient: { type: Number, default: 1 },
   patientComplexityTotal: { type: Number, default: 0 },
   convertedHours: { type: Number, default: 0 },

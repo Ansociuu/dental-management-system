@@ -30,6 +30,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const currentYear = () => new Date().getFullYear();
+const currentDate = () => new Date().toISOString().slice(0, 10);
 
 const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -60,6 +61,12 @@ const payslipStatusLabels = {
   CANCELLED: 'Đã hủy'
 };
 const getPayslipStatusLabel = (status) => payslipStatusLabels[status] || '-';
+const salaryRateStatusLabels = {
+  PENDING: 'Chờ áp dụng',
+  ACTIVE: 'Đang áp dụng',
+  INACTIVE: 'Ngừng hiệu lực'
+};
+const getSalaryRateStatusLabel = (status) => salaryRateStatusLabels[status] || status || '-';
 const downloadCsv = (filename, headers, rows) => {
   const csv = [headers, ...rows]
     .map((line) => line.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
@@ -153,6 +160,11 @@ const PanelHeader = ({ eyebrow, title, actions }) => (
 
 const BaseRateSettings = () => {
   const [baseHourlyRate, setBaseHourlyRate] = useState('');
+  const [effectiveFrom, setEffectiveFrom] = useState(currentDate());
+  const [effectiveTo, setEffectiveTo] = useState('');
+  const [note, setNote] = useState('');
+  const [rates, setRates] = useState([]);
+  const [activeRate, setActiveRate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -164,6 +176,8 @@ const BaseRateSettings = () => {
       setError('');
       const res = await getSalaryBaseRate();
       setBaseHourlyRate(res.data?.baseHourlyRate || 210000);
+      setActiveRate(res.data?.activeRate || null);
+      setRates(res.data?.rates || []);
     } catch (err) {
       setError(err.message || 'Không thể tải số tiền một giờ');
     } finally {
@@ -185,9 +199,18 @@ const BaseRateSettings = () => {
         setError('Số tiền một giờ phải lớn hơn 0');
         return;
       }
-      await updateSalaryBaseRate(value);
-      setSuccess('Đã lưu số tiền cơ bản một giờ');
-      setBaseHourlyRate(value);
+      const res = await updateSalaryBaseRate({
+        baseHourlyRate: value,
+        effectiveFrom,
+        effectiveTo: effectiveTo || null,
+        note
+      });
+      setSuccess('Đã lưu mức tiền cơ bản một giờ');
+      setBaseHourlyRate(res.data?.baseHourlyRate || value);
+      setActiveRate(res.data?.activeRate || null);
+      setRates(res.data?.rates || []);
+      setNote('');
+      setEffectiveTo('');
     } catch (err) {
       setError(err.message || 'Không thể lưu số tiền một giờ');
     } finally {
@@ -219,23 +242,93 @@ const BaseRateSettings = () => {
         {loading ? (
           <LoadingState />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-end">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase">Số tiền một giờ</label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">payments</span>
-                <input
-                  type="number"
-                  min="1"
-                  value={baseHourlyRate}
-                  onChange={(event) => setBaseHourlyRate(event.target.value)}
-                  className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-2xl text-xl font-black text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-5 items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="space-y-2 md:col-span-2 xl:col-span-1">
+                  <label className="text-xs font-black text-slate-500 uppercase">Số tiền một giờ</label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">payments</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={baseHourlyRate}
+                      onChange={(event) => setBaseHourlyRate(event.target.value)}
+                      className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-2xl text-base font-black text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-500 uppercase">Ngày áp dụng</label>
+                  <input
+                    type="date"
+                    value={effectiveFrom}
+                    onChange={(event) => setEffectiveFrom(event.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-500 uppercase">Ngày kết thúc</label>
+                  <input
+                    type="date"
+                    value={effectiveTo}
+                    onChange={(event) => setEffectiveTo(event.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-500 uppercase">Ghi chú</label>
+                  <input
+                    type="text"
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Ví dụ: áp dụng từ tháng mới"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5">
+                <p className="text-xs font-black text-blue-500 uppercase">Đang áp dụng</p>
+                <p className="text-2xl font-black text-blue-800 mt-2">{formatCurrency(activeRate?.baseHourlyRate || baseHourlyRate)}</p>
+                <p className="text-xs font-bold text-blue-500 mt-2">
+                  Từ {formatDate(activeRate?.effectiveFrom)}
+                </p>
               </div>
             </div>
-            <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5">
-              <p className="text-xs font-black text-blue-500 uppercase">Đang áp dụng</p>
-              <p className="text-2xl font-black text-blue-800 mt-2">{formatCurrency(baseHourlyRate)}</p>
+
+            <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                  <tr>
+                    <th className="px-5 py-4 font-black min-w-[150px]">Mức tiền</th>
+                    <th className="px-5 py-4 font-black min-w-[140px]">Ngày áp dụng</th>
+                    <th className="px-5 py-4 font-black min-w-[140px]">Ngày kết thúc</th>
+                    <th className="px-5 py-4 font-black min-w-[140px]">Trạng thái</th>
+                    <th className="px-5 py-4 font-black min-w-[220px]">Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {rates.map((rate) => (
+                    <tr key={rate._id} className="hover:bg-blue-50/30">
+                      <td className="px-5 py-4 font-black text-slate-900">{formatCurrency(rate.baseHourlyRate)}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{formatDate(rate.effectiveFrom)}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{rate.effectiveTo ? formatDate(rate.effectiveTo) : '-'}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-black ${
+                          rate.status === 'ACTIVE'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : rate.status === 'PENDING'
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {getSalaryRateStatusLabel(rate.status)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-slate-500">{rate.note || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -714,7 +807,7 @@ const DoctorMonthlyPayslip = () => {
       setSuccess('');
       const res = await generateSalaryPayslip({ doctorId, month });
       setPayslip(res.data);
-      setSuccess('Đã lập phiếu lương bác sĩ');
+      setSuccess('Đã chốt phiếu lương bác sĩ');
     } catch (err) {
       setError(err.message || 'Không thể lập phiếu lương');
     } finally {
@@ -728,6 +821,7 @@ const DoctorMonthlyPayslip = () => {
       'Ngày',
       'Ca làm',
       'Loại ngày',
+      'Tiền một giờ',
       'Giờ làm',
       'Hệ số ca',
       'Hệ số bệnh nhân',
@@ -737,6 +831,7 @@ const DoctorMonthlyPayslip = () => {
       formatDate(line.date),
       line.shiftName || '',
       line.dayTypeLabel || '',
+      line.baseHourlyRate || payslip.baseHourlyRate || 0,
       line.workingHours || 0,
       line.shiftCoefficient || 0,
       line.patientComplexityTotal || 0,
@@ -749,7 +844,7 @@ const DoctorMonthlyPayslip = () => {
     <div>
       <PanelHeader
         eyebrow="Phiếu lương bác sĩ"
-        title="Lập phiếu lương cho một bác sĩ trong một tháng"
+        title="Lập và chốt phiếu lương cho một bác sĩ trong một tháng"
         actions={(
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <button
@@ -759,7 +854,7 @@ const DoctorMonthlyPayslip = () => {
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-sm font-black shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">request_quote</span>
-              {submitting ? 'Đang lập...' : 'Lập phiếu lương'}
+              {submitting ? 'Đang chốt...' : 'Chốt phiếu lương'}
             </button>
             <button type="button" onClick={exportPayslipCsv} disabled={!payslip} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
               <span className="material-symbols-outlined text-[20px]">download</span>
@@ -801,7 +896,7 @@ const DoctorMonthlyPayslip = () => {
 
       {!payslip ? (
         <Panel>
-          <EmptyState icon="request_quote" label="Chọn bác sĩ và lập phiếu lương để xem chi tiết" />
+          <EmptyState icon="request_quote" label="Chọn bác sĩ và chốt phiếu lương để xem chi tiết" />
         </Panel>
       ) : (
         <>
@@ -828,6 +923,7 @@ const DoctorMonthlyPayslip = () => {
                 <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
                   <tr>
                     <th className="px-5 py-4 font-black min-w-[190px]">Ca làm</th>
+                    <th className="px-5 py-4 font-black min-w-[140px]">Tiền/giờ</th>
                     <th className="px-5 py-4 font-black min-w-[150px]">Hệ số</th>
                     <th className="px-5 py-4 font-black min-w-[260px]">Bệnh nhân</th>
                     <th className="px-5 py-4 font-black text-right min-w-[150px]">Giờ quy đổi</th>
@@ -842,6 +938,7 @@ const DoctorMonthlyPayslip = () => {
                         <p className="text-xs font-semibold text-slate-500 mt-1">{line.shiftName} • {line.startTime}-{line.endTime}</p>
                         <p className="text-[11px] font-bold text-slate-400 mt-1">{formatNumber(line.workingHours)} giờ thực tế</p>
                       </td>
+                      <td className="px-5 py-4 font-black text-slate-900">{formatCurrency(line.baseHourlyRate || payslip.baseHourlyRate)}</td>
                       <td className="px-5 py-4">
                         <p className="font-black text-slate-900">Ca: {formatNumber(line.shiftCoefficient)}</p>
                         <p className="text-xs font-semibold text-slate-500 mt-1">BN: {formatNumber(line.patientComplexityTotal)}</p>
@@ -980,7 +1077,8 @@ const MonthlySalaryReport = () => {
               onChange={(event) => setStatus(event.target.value)}
               className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             >
-              <option value="ALL">APPROVED + PAID</option>
+              <option value="ALL">Đã chốt trở lên</option>
+              <option value="FINALIZED">Đã chốt</option>
               <option value="APPROVED">Đã duyệt</option>
               <option value="PAID">Đã thanh toán</option>
             </select>
@@ -1172,7 +1270,8 @@ const DoctorYearlySalaryReport = () => {
               onChange={(event) => setStatus(event.target.value)}
               className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             >
-              <option value="ALL">APPROVED + PAID</option>
+              <option value="ALL">Đã chốt trở lên</option>
+              <option value="FINALIZED">Đã chốt</option>
               <option value="APPROVED">Đã duyệt</option>
               <option value="PAID">Đã thanh toán</option>
             </select>
@@ -1375,7 +1474,8 @@ const YearlySalaryReport = () => {
               onChange={(event) => setStatus(event.target.value)}
               className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             >
-              <option value="ALL">APPROVED + PAID</option>
+              <option value="ALL">Đã chốt trở lên</option>
+              <option value="FINALIZED">Đã chốt</option>
               <option value="APPROVED">Đã duyệt</option>
               <option value="PAID">Đã thanh toán</option>
             </select>

@@ -13,6 +13,7 @@ const MODULE_LABELS = {
   users: { label: 'Người dùng', desc: 'Tài khoản nhân viên và bác sĩ', icon: 'manage_accounts' },
   roles: { label: 'Phân quyền', desc: 'Cấu hình quyền theo vai trò', icon: 'security' },
   reports: { label: 'Báo cáo', desc: 'Doanh thu, hiệu suất và dịch vụ', icon: 'bar_chart' },
+  payroll: { label: 'Tính lương', desc: 'Thiết lập hệ số, lập phiếu và xem báo cáo lương bác sĩ', icon: 'payments' },
   settings: { label: 'Cấu hình', desc: 'Ca làm việc, ngày nghỉ và thiết lập', icon: 'settings' },
   doctorDuty: { label: 'Lịch trực bác sĩ', desc: 'Phân công và xem lịch trực', icon: 'clinical_notes' }
 };

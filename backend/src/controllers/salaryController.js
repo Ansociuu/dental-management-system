@@ -4,6 +4,7 @@ const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
 const DutySchedule = require('../models/DutySchedule');
 const Holiday = require('../models/Holiday');
 const SalaryPayslip = require('../models/SalaryPayslip');
+const SalaryRate = require('../models/SalaryRate');
 const SalarySetting = require('../models/SalarySetting');
 const Shift = require('../models/Shift');
 const ShiftSalaryRule = require('../models/ShiftSalaryRule');
@@ -11,7 +12,7 @@ const User = require('../models/User');
 const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
 
 const DEFAULT_BASE_HOURLY_RATE = 210000;
-const VALID_PAYSLIP_REPORT_STATUSES = ['APPROVED', 'PAID'];
+const VALID_PAYSLIP_REPORT_STATUSES = ['FINALIZED', 'APPROVED', 'PAID'];
 const PAYSLIP_STATUSES = ['DRAFT', 'FINALIZED', 'APPROVED', 'PAID', 'CANCELLED'];
 
 const DEGREE_LEVELS = [
@@ -40,7 +41,7 @@ const SHIFT_DAY_TYPES = [
   { value: 'HOLIDAY', dayOfWeek: -3, label: 'Ngày lễ' }
 ];
 
-const SALARY_SETTING_LOG_FIELDS = ['key', 'baseHourlyRate'];
+const SALARY_SETTING_LOG_FIELDS = ['baseHourlyRate', 'effectiveFrom', 'effectiveTo', 'status', 'note'];
 const SHIFT_RULE_LOG_FIELDS = ['shiftId', 'dayType', 'dayOfWeek', 'shiftCoefficient', 'status'];
 
 const createHttpError = (message, statusCode = 400) => {
@@ -60,6 +61,38 @@ const normalizeNumber = (value, fallback = 0) => {
 
 const roundHours = (value) => Math.round((normalizeNumber(value) + Number.EPSILON) * 100) / 100;
 const roundMoney = (value) => Math.round(normalizeNumber(value));
+
+const startOfDay = (dateInput = new Date()) => {
+  const date = new Date(dateInput);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+};
+
+const endOfDay = (dateInput = new Date()) => {
+  const date = new Date(dateInput);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+};
+
+const addDays = (dateInput, days) => {
+  const date = new Date(dateInput);
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+const parseEffectiveDate = (dateInput, fallback = new Date(), end = false) => {
+  if (!dateInput) return end ? endOfDay(fallback) : startOfDay(fallback);
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) {
+    throw createHttpError('Ngày hiệu lực không hợp lệ.');
+  }
+  return end ? endOfDay(date) : startOfDay(date);
+};
+
+const getRateStatusForToday = (effectiveFrom, effectiveTo) => {
+  const today = startOfDay();
+  if (startOfDay(effectiveFrom) > today) return 'PENDING';
+  if (effectiveTo && endOfDay(effectiveTo) < today) return 'INACTIVE';
+  return 'ACTIVE';
+};
 
 const getLocalDateKey = (dateInput) => {
   const date = new Date(dateInput);
@@ -160,8 +193,70 @@ const ensureBaseSetting = async () => {
       setting = await SalarySetting.findOne({ key: 'BASE_RATE' });
     }
   }
-  return setting;
+
+  const existingRate = await SalaryRate.findOne();
+  if (!existingRate) {
+    await SalaryRate.create({
+      baseHourlyRate: normalizeNumber(setting.baseHourlyRate, DEFAULT_BASE_HOURLY_RATE),
+      effectiveFrom: startOfDay(),
+      status: 'ACTIVE',
+      note: 'Mức tiền mặc định'
+    });
+  }
+
+  await refreshSalaryRateStatuses();
+  const activeRate = await getActiveSalaryRateForDate(new Date());
+  if (activeRate && activeRate.baseHourlyRate !== setting.baseHourlyRate) {
+    setting.baseHourlyRate = activeRate.baseHourlyRate;
+    await setting.save();
+  }
+
+  return {
+    ...setting.toObject(),
+    baseHourlyRate: activeRate?.baseHourlyRate || setting.baseHourlyRate
+  };
 };
+
+const refreshSalaryRateStatuses = async () => {
+  const rates = await SalaryRate.find().sort({ effectiveFrom: 1, createdAt: 1 });
+  await Promise.all(rates.map((rate) => {
+    const status = getRateStatusForToday(rate.effectiveFrom, rate.effectiveTo);
+    if (rate.status === status) return Promise.resolve(rate);
+    rate.status = status;
+    return rate.save();
+  }));
+};
+
+const getActiveSalaryRateForDate = async (dateInput) => {
+  const date = new Date(dateInput);
+  return SalaryRate.findOne({
+    effectiveFrom: { $lte: date },
+    $or: [{ effectiveTo: null }, { effectiveTo: { $gte: date } }]
+  }).sort({ effectiveFrom: -1, createdAt: -1 }).lean();
+};
+
+const getBaseRateForDate = (dateInput, rates = [], fallback = DEFAULT_BASE_HOURLY_RATE) => {
+  const date = new Date(dateInput);
+  const matched = rates
+    .filter((rate) => (
+      new Date(rate.effectiveFrom) <= date &&
+      (!rate.effectiveTo || new Date(rate.effectiveTo) >= date)
+    ))
+    .sort((a, b) => new Date(b.effectiveFrom) - new Date(a.effectiveFrom))[0];
+
+  return normalizeNumber(matched?.baseHourlyRate, fallback);
+};
+
+const serializeSalaryRate = (rate) => ({
+  _id: rate._id,
+  baseHourlyRate: rate.baseHourlyRate,
+  effectiveFrom: rate.effectiveFrom,
+  effectiveTo: rate.effectiveTo,
+  status: rate.status,
+  note: rate.note || '',
+  createdAt: rate.createdAt,
+  updatedAt: rate.updatedAt
+});
 
 const getDoctorProfileSnapshot = async (doctorId) => {
   const profile = await DoctorSalaryProfile.findOneAndUpdate(
@@ -223,7 +318,7 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
     throw createHttpError('Không tìm thấy bác sĩ.', 404);
   }
 
-  const [baseSetting, profile, duties, appointments, complexities, holidays] = await Promise.all([
+  const [baseSetting, profile, duties, appointments, complexities, holidays, salaryRates] = await Promise.all([
     setting ? Promise.resolve(setting) : ensureBaseSetting(),
     getDoctorProfileSnapshot(doctor._id),
     DutySchedule.find({
@@ -252,7 +347,11 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
       status: 'ACTIVE',
       startDate: { $lte: period.end },
       endDate: { $gte: period.start }
-    }).lean()
+    }).lean(),
+    SalaryRate.find({
+      effectiveFrom: { $lte: period.end },
+      $or: [{ effectiveTo: null }, { effectiveTo: { $gte: period.start } }]
+    }).sort({ effectiveFrom: 1 }).lean()
   ]);
 
   const shiftIds = duties
@@ -283,6 +382,7 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
     const rule = ruleMap.get(`${shiftId}:${dayType}`);
     const shiftCoefficient = normalizeNumber(rule?.shiftCoefficient, 1);
     const workingHours = getShiftHours(shift.startTime, shift.endTime);
+    const lineBaseHourlyRate = getBaseRateForDate(duty.date, salaryRates, baseHourlyRate);
     const shiftAppointments = appointmentsByShiftDate.get(`${dateKey}:${shiftId}`) || [];
 
     const appointmentLines = shiftAppointments.map((appointment) => {
@@ -303,7 +403,7 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
       0
     ));
     const convertedHours = roundHours(workingHours * (shiftCoefficient + patientComplexityTotal));
-    const amount = roundMoney(convertedHours * profile.doctorCoefficient * baseHourlyRate);
+    const amount = roundMoney(convertedHours * profile.doctorCoefficient * lineBaseHourlyRate);
 
     return {
       dutyId: duty._id,
@@ -315,6 +415,7 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
       startTime: shift.startTime,
       endTime: shift.endTime,
       workingHours,
+      baseHourlyRate: lineBaseHourlyRate,
       shiftCoefficient,
       patientComplexityTotal,
       convertedHours,
@@ -362,7 +463,7 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
   };
 };
 
-const toPayslipPayload = (data, user, status = 'APPROVED') => ({
+const toPayslipPayload = (data, user, status = 'FINALIZED') => ({
   doctorId: data.doctor._id,
   month: data.month,
   status,
@@ -385,10 +486,14 @@ const toPayslipPayload = (data, user, status = 'APPROVED') => ({
 const getBaseRate = async (req, res, next) => {
   try {
     const setting = await ensureBaseSetting();
+    const rates = await SalaryRate.find().sort({ effectiveFrom: -1, createdAt: -1 }).lean();
+    const activeRate = await getActiveSalaryRateForDate(new Date());
     res.json({
       success: true,
       data: {
         baseHourlyRate: setting.baseHourlyRate,
+        activeRate: activeRate ? serializeSalaryRate(activeRate) : null,
+        rates: rates.map(serializeSalaryRate),
         updatedAt: setting.updatedAt
       }
     });
@@ -403,28 +508,65 @@ const updateBaseRate = async (req, res, next) => {
     if (baseHourlyRate <= 0) {
       throw createHttpError('Số tiền một giờ phải lớn hơn 0.');
     }
+    const effectiveFrom = parseEffectiveDate(req.body.effectiveFrom);
+    const effectiveTo = req.body.effectiveTo ? parseEffectiveDate(req.body.effectiveTo, undefined, true) : null;
+    if (effectiveTo && effectiveTo < effectiveFrom) {
+      throw createHttpError('Ngày kết thúc hiệu lực phải sau ngày áp dụng.');
+    }
+
+    const duplicate = await SalaryRate.findOne({ effectiveFrom });
+    if (duplicate) {
+      throw createHttpError('Đã tồn tại mức tiền áp dụng từ ngày này.');
+    }
 
     const currentSetting = await ensureBaseSetting();
-    const before = toPlainObject(currentSetting, SALARY_SETTING_LOG_FIELDS);
+    const currentRate = await getActiveSalaryRateForDate(effectiveFrom);
+    const before = currentRate ? toPlainObject(currentRate, SALARY_SETTING_LOG_FIELDS) : toPlainObject(currentSetting, ['baseHourlyRate']);
+    const previousEffectiveTo = endOfDay(addDays(effectiveFrom, -1));
+    await SalaryRate.updateMany(
+      {
+        effectiveFrom: { $lt: effectiveFrom },
+        $or: [{ effectiveTo: null }, { effectiveTo: { $gte: effectiveFrom } }]
+      },
+      { $set: { effectiveTo: previousEffectiveTo, updatedBy: req.user._id } }
+    );
+
+    const newRate = await SalaryRate.create({
+      baseHourlyRate,
+      effectiveFrom,
+      effectiveTo,
+      status: getRateStatusForToday(effectiveFrom, effectiveTo),
+      note: String(req.body.note || '').trim(),
+      createdBy: req.user._id,
+      updatedBy: req.user._id
+    });
+    await refreshSalaryRateStatuses();
+    const activeRate = await getActiveSalaryRateForDate(new Date());
     const setting = await SalarySetting.findOneAndUpdate(
       { key: 'BASE_RATE' },
-      { baseHourlyRate, updatedBy: req.user._id },
+      { baseHourlyRate: activeRate?.baseHourlyRate || baseHourlyRate, updatedBy: req.user._id },
       { new: true, upsert: true, runValidators: true }
     );
     await recordConfigChange({
       resourceType: 'SALARY_SETTING',
-      resourceId: setting._id,
+      resourceId: newRate._id,
       resourceName: 'Tiền cơ bản một giờ',
-      action: 'UPDATE',
+      action: 'CREATE',
       before,
-      after: toPlainObject(setting, SALARY_SETTING_LOG_FIELDS),
+      after: toPlainObject(newRate, SALARY_SETTING_LOG_FIELDS),
       user: req.user
     });
+    const rates = await SalaryRate.find().sort({ effectiveFrom: -1, createdAt: -1 }).lean();
 
     res.json({
       success: true,
-      message: 'Cập nhật số tiền một giờ thành công.',
-      data: setting
+      message: 'Lưu mức tiền một giờ thành công.',
+      data: {
+        baseHourlyRate: setting.baseHourlyRate,
+        activeRate: activeRate ? serializeSalaryRate(activeRate) : null,
+        rates: rates.map(serializeSalaryRate),
+        updatedAt: setting.updatedAt
+      }
     });
   } catch (error) {
     next(error);
@@ -679,9 +821,9 @@ const generatePayslip = async (req, res, next) => {
       throw createHttpError('Bác sĩ và tháng lương là bắt buộc.');
     }
 
-    const status = VALID_PAYSLIP_REPORT_STATUSES.includes(req.body.status)
+    const status = PAYSLIP_STATUSES.includes(req.body.status) && req.body.status !== 'CANCELLED'
       ? req.body.status
-      : 'APPROVED';
+      : 'FINALIZED';
     const data = await calculatePayslipData({ doctorId, month });
     const payload = toPayslipPayload(data, req.user, status);
     const payslip = await SalaryPayslip.findOneAndUpdate(
@@ -692,7 +834,7 @@ const generatePayslip = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'Lập phiếu lương bác sĩ thành công.',
+      message: 'Chốt phiếu lương bác sĩ thành công.',
       data: {
         ...data,
         _id: payslip._id,

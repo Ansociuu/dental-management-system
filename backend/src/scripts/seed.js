@@ -12,6 +12,7 @@ const Shift = require('../models/Shift');
 const Patient = require('../models/Patient');
 const Holiday = require('../models/Holiday');
 const DutySchedule = require('../models/DutySchedule');
+const SalaryRate = require('../models/SalaryRate');
 const SalarySetting = require('../models/SalarySetting');
 const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
 const ShiftSalaryRule = require('../models/ShiftSalaryRule');
@@ -30,6 +31,7 @@ const seedData = async () => {
     await Patient.deleteMany({});
     await Holiday.deleteMany({});
     await DutySchedule.deleteMany({});
+    await SalaryRate.deleteMany({});
     await SalarySetting.deleteMany({});
     await DoctorSalaryProfile.deleteMany({});
     await ShiftSalaryRule.deleteMany({});
@@ -54,6 +56,12 @@ const seedData = async () => {
 
     const doctorsList = users.filter(u => u.role === 'DOCTOR');
     await SalarySetting.create({ key: 'BASE_RATE', baseHourlyRate: 210000 });
+    await SalaryRate.create({
+      baseHourlyRate: 210000,
+      effectiveFrom: new Date(new Date().getFullYear(), 0, 1),
+      status: 'ACTIVE',
+      note: 'Mức tiền mặc định'
+    });
     const degreeSamples = [
       { degreeLevel: 'DOCTORATE', doctorCoefficient: 2.0 },
       { degreeLevel: 'MASTER', doctorCoefficient: 1.5 },
