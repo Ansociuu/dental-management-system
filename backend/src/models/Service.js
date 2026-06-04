@@ -9,6 +9,12 @@ const serviceSchema = new mongoose.Schema({
   description: { type: String },
   price: { type: Number, required: [true, 'Giá dịch vụ là bắt buộc'], min: 0 },
   duration: { type: Number, default: 30 }, // Thời gian ước tính (phút)
+  complexityCoefficient: {
+    type: Number,
+    default: 0,
+    min: [0, 'Hệ số độ khó không được nhỏ hơn 0'],
+    max: [0.5, 'Hệ số độ khó không được lớn hơn 0.5']
+  },
   status: { 
     type: String, 
     enum: ['ACTIVE', 'INACTIVE'], 

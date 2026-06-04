@@ -33,7 +33,6 @@ const shiftSalaryRuleSchema = new mongoose.Schema({
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-shiftSalaryRuleSchema.index({ shiftId: 1, dayOfWeek: 1 }, { unique: true });
 shiftSalaryRuleSchema.index({ shiftId: 1, dayType: 1 }, { unique: true });
 
 module.exports = mongoose.model('ShiftSalaryRule', shiftSalaryRuleSchema);

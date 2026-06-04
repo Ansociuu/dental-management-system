@@ -51,7 +51,33 @@ const formatDate = (date) => {
   });
 };
 
+const degreePrefixMap = {
+  UNIVERSITY: 'BS.',
+  MASTER: 'ThS.BS.',
+  DOCTORATE: 'TS.BS.',
+  ASSOCIATE_PROFESSOR: 'PGS.BS.',
+  PROFESSOR: 'GS.BS.'
+};
+const stripDoctorPrefix = (name = '') => String(name)
+  .replace(/^(GS\.BS\.|PGS\.BS\.|TS\.BS\.|ThS\.BS\.|BS\.)\s*/i, '')
+  .trim();
+const getDegreePrefix = (degreeLevel) => degreePrefixMap[degreeLevel] || 'BS.';
 const getDoctorName = (doctor) => doctor?.fullName || doctor?.doctor?.fullName || '-';
+const formatDoctorName = (doctor, degreeLevel) => {
+  const fullName = getDoctorName(doctor);
+  if (fullName === '-') return '-';
+  return `${getDegreePrefix(degreeLevel)} ${stripDoctorPrefix(fullName)}`;
+};
+const formatProfileDoctorName = (row) => formatDoctorName(row?.doctor || row, row?.profile?.degreeLevel || row?.doctorDegreeLevel);
+const getAppointmentServiceNames = (appointment) => {
+  const performed = Array.isArray(appointment?.servicesPerformed)
+    ? appointment.servicesPerformed
+        .map((item) => item.serviceId?.name)
+        .filter(Boolean)
+    : [];
+  if (performed.length > 0) return performed.join(', ');
+  return appointment?.serviceId?.name || '-';
+};
 const toNumericInput = (value) => Number(String(value ?? '').replace(/[^0-9.]/g, ''));
 const payslipStatusLabels = {
   APPROVED: 'Đã duyệt',
@@ -383,7 +409,7 @@ const DoctorCoefficientSettings = () => {
         degreeLevel: row.profile.degreeLevel,
         doctorCoefficient: Number(row.profile.doctorCoefficient)
       });
-      setSuccess(`Đã lưu hệ số cho BS. ${row.doctor.fullName}`);
+      setSuccess(`Đã lưu hệ số cho ${formatProfileDoctorName(row)}`);
       await load();
     } catch (err) {
       setError(err.message || 'Không thể lưu hệ số bác sĩ');
@@ -418,7 +444,7 @@ const DoctorCoefficientSettings = () => {
                 {rows.map((row) => (
                   <tr key={row.doctor._id} className="hover:bg-blue-50/30">
                     <td className="px-6 py-4">
-                      <p className="font-black text-slate-900">BS. {row.doctor.fullName}</p>
+                      <p className="font-black text-slate-900">{formatProfileDoctorName(row)}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">{row.doctor.email || row.doctor.phone || '-'}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -698,7 +724,7 @@ const ComplexityEntry = () => {
             >
               <option value="">Tất cả bác sĩ</option>
               {doctors.map((doctor) => (
-                <option key={doctor._id} value={doctor._id}>BS. {doctor.fullName}</option>
+                <option key={doctor._id} value={doctor._id}>{formatDoctorName(doctor, doctor.degreeLevel)}</option>
               ))}
             </select>
           </div>
@@ -734,11 +760,11 @@ const ComplexityEntry = () => {
                   <tr key={row.appointment._id} className="hover:bg-blue-50/30 align-top">
                     <td className="px-5 py-4">
                       <p className="font-black text-slate-900">{row.appointment.patientId?.fullName || '-'}</p>
-                      <p className="text-xs font-semibold text-slate-500 mt-1">{row.appointment.patientId?.patientCode || '-'} • {row.appointment.serviceId?.name || '-'}</p>
+                      <p className="text-xs font-semibold text-slate-500 mt-1">{row.appointment.patientId?.patientCode || '-'} • {getAppointmentServiceNames(row.appointment)}</p>
                       <p className="text-[11px] font-bold text-slate-400 mt-1">{formatDate(row.appointment.date)}</p>
                     </td>
                     <td className="px-5 py-4">
-                      <p className="font-black text-slate-900">BS. {row.appointment.doctorId?.fullName || '-'}</p>
+                      <p className="font-black text-slate-900">{formatDoctorName(row.appointment.doctorId, row.appointment.doctorProfile?.degreeLevel)}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">{row.appointment.shiftId?.name || '-'} • STT {row.appointment.queueNumber || '-'}</p>
                     </td>
                     <td className="px-5 py-4">
@@ -887,7 +913,7 @@ const DoctorMonthlyPayslip = () => {
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             >
               {loadingDoctors ? <option>Đang tải...</option> : doctors.map((row) => (
-                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+                <option key={row.doctor._id} value={row.doctor._id}>{formatProfileDoctorName(row)}</option>
               ))}
             </select>
           </div>
@@ -911,7 +937,7 @@ const DoctorMonthlyPayslip = () => {
             <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-3">
               <div>
                 <p className="text-xs font-black text-blue-700 uppercase">Phiếu lương {payslip.month}</p>
-                <h3 className="text-xl font-black text-slate-900 mt-1">BS. {payslip.doctor?.fullName}</h3>
+                <h3 className="text-xl font-black text-slate-900 mt-1">{formatDoctorName(payslip.doctor, payslip.doctorDegreeLevel)}</h3>
               </div>
               <div className="text-left md:text-right">
                 <p className="text-xs font-bold text-slate-400 uppercase">Tiền một giờ</p>
@@ -1069,7 +1095,7 @@ const MonthlySalaryReport = () => {
             >
               <option value="ALL">Tất cả bác sĩ</option>
               {doctors.map((row) => (
-                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+                <option key={row.doctor._id} value={row.doctor._id}>{formatProfileDoctorName(row)}</option>
               ))}
             </select>
             <select
@@ -1152,7 +1178,7 @@ const ReportTable = ({ rows, loading }) => (
             {rows.map((row) => (
               <tr key={row.payslipId || row.doctor?._id || row.month} className="hover:bg-blue-50/30">
                 <td className="px-5 py-4">
-                  <p className="font-black text-slate-900">BS. {getDoctorName(row.doctor)}</p>
+                  <p className="font-black text-slate-900">{formatDoctorName(row.doctor, row.doctorDegreeLevel)}</p>
                   <p className="text-xs font-semibold text-slate-500 mt-1">{row.month}</p>
                 </td>
                 <td className="px-5 py-4 font-bold text-slate-700">{getPayslipStatusLabel(row.status)}</td>
@@ -1256,7 +1282,7 @@ const DoctorYearlySalaryReport = () => {
               className="min-w-[260px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
             >
               {doctors.map((row) => (
-                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+                <option key={row.doctor._id} value={row.doctor._id}>{formatProfileDoctorName(row)}</option>
               ))}
             </select>
             <input
@@ -1466,7 +1492,7 @@ const YearlySalaryReport = () => {
             >
               <option value="ALL">Tất cả bác sĩ</option>
               {doctors.map((row) => (
-                <option key={row.doctor._id} value={row.doctor._id}>BS. {row.doctor.fullName}</option>
+                <option key={row.doctor._id} value={row.doctor._id}>{formatProfileDoctorName(row)}</option>
               ))}
             </select>
             <select
@@ -1543,7 +1569,7 @@ const YearlySalaryReport = () => {
                 {rows.map((row) => (
                   <tr key={row.doctor?._id || row.doctor?.fullName} className="hover:bg-blue-50/30">
                     <td className="px-5 py-4">
-                      <p className="font-black text-slate-900">BS. {row.doctor?.fullName || '-'}</p>
+                      <p className="font-black text-slate-900">{formatDoctorName(row.doctor, row.doctorDegreeLevel)}</p>
                       <p className="text-xs font-semibold text-slate-500 mt-1">{row.doctor?.specialization || row.doctor?.email || '-'}</p>
                     </td>
                     <td className="px-5 py-4 font-bold text-slate-700">{row.totalPayslips}</td>

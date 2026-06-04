@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "node -e \"require('./src/models/Appointment'); require('./src/controllers/appointmentController'); require('./src/routes/appointmentRoutes'); require('./src/controllers/salaryController'); require('./src/routes/salaryRoutes'); console.log('backend modules ok')\"",
     "dev": "nodemon src/app.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "apply-service-complexity": "node src/scripts/applyServiceComplexity.js",
+    "fix-shift-rule-indexes": "node src/scripts/fixShiftSalaryRuleIndexes.js"
   },
   "keywords": [],
   "author": "",

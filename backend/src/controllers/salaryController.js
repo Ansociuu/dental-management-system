@@ -59,8 +59,56 @@ const normalizeNumber = (value, fallback = 0) => {
   return Number.isFinite(number) ? number : fallback;
 };
 
+const normalizeComplexityCoefficient = (value, fallback = 0) => {
+  const number = normalizeNumber(value, fallback);
+  return Math.min(0.5, Math.max(0, Math.round((number + Number.EPSILON) * 100) / 100));
+};
+
 const roundHours = (value) => Math.round((normalizeNumber(value) + Number.EPSILON) * 100) / 100;
 const roundMoney = (value) => Math.round(normalizeNumber(value));
+
+const getServiceComplexityCoefficient = (service) => (
+  normalizeComplexityCoefficient(service?.complexityCoefficient, 0)
+);
+
+const getAppointmentServiceItems = (appointment) => {
+  const performedServices = Array.isArray(appointment?.servicesPerformed)
+    ? appointment.servicesPerformed
+        .map((item) => item.serviceId)
+        .filter(Boolean)
+    : [];
+
+  if (performedServices.length > 0) return performedServices;
+  return appointment?.serviceId ? [appointment.serviceId] : [];
+};
+
+const getAppointmentServiceNames = (appointment) => {
+  const names = getAppointmentServiceItems(appointment)
+    .map((service) => service?.name)
+    .filter(Boolean);
+  return names.length > 0 ? names.join(', ') : '-';
+};
+
+const getAppointmentServiceComplexityCoefficient = (appointment) => {
+  const coefficients = getAppointmentServiceItems(appointment).map(getServiceComplexityCoefficient);
+  if (coefficients.length === 0) return 0;
+  return normalizeComplexityCoefficient(Math.max(...coefficients), 0);
+};
+
+const getEffectiveAppointmentComplexity = (complexity, serviceComplexityCoefficient) => {
+  const manualCoefficient = normalizeComplexityCoefficient(complexity?.complexityCoefficient, 0);
+  const hasNote = String(complexity?.note || '').trim().length > 0;
+  const usesManualValue = Boolean(complexity) && (
+    manualCoefficient > 0 ||
+    hasNote ||
+    serviceComplexityCoefficient === 0
+  );
+
+  return {
+    coefficient: usesManualValue ? manualCoefficient : serviceComplexityCoefficient,
+    source: usesManualValue ? 'MANUAL' : 'SERVICE_DEFAULT'
+  };
+};
 
 const startOfDay = (dateInput = new Date()) => {
   const date = new Date(dateInput);
@@ -262,7 +310,7 @@ const getDoctorProfileSnapshot = async (doctorId) => {
   const profile = await DoctorSalaryProfile.findOneAndUpdate(
     { doctorId },
     { $setOnInsert: { doctorId } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
   );
   const degreeLevel = profile?.degreeLevel || 'UNIVERSITY';
   const degreeConfig = getDegreeConfig(degreeLevel);
@@ -280,7 +328,7 @@ const getDoctorProfilesPayload = async () => {
     DoctorSalaryProfile.findOneAndUpdate(
       { doctorId: doctor._id },
       { $setOnInsert: { doctorId: doctor._id } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     ).lean()
   )));
   const profileMap = new Map(profiles.map((profile) => [profile.doctorId.toString(), profile]));
@@ -336,7 +384,8 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
     })
       .populate('patientId', 'fullName patientCode phone')
       .populate('shiftId', 'name startTime endTime')
-      .populate('serviceId', 'name')
+      .populate('serviceId', 'name complexityCoefficient')
+      .populate('servicesPerformed.serviceId', 'name complexityCoefficient')
       .sort({ date: 1, queueNumber: 1 })
       .lean(),
     AppointmentComplexity.find({
@@ -387,13 +436,17 @@ const calculatePayslipData = async ({ doctorId, doctorDoc, month, setting }) => 
 
     const appointmentLines = shiftAppointments.map((appointment) => {
       const complexity = complexityMap.get(appointment._id.toString());
+      const serviceComplexityCoefficient = getAppointmentServiceComplexityCoefficient(appointment);
+      const effectiveComplexity = getEffectiveAppointmentComplexity(complexity, serviceComplexityCoefficient);
       return {
         appointmentId: appointment._id,
         patientId: appointment.patientId?._id || appointment.patientId,
         patientName: appointment.patientId?.fullName || '-',
         patientCode: appointment.patientId?.patientCode || '-',
-        serviceName: appointment.serviceId?.name || '-',
-        complexityCoefficient: normalizeNumber(complexity?.complexityCoefficient, 0),
+        serviceName: getAppointmentServiceNames(appointment),
+        serviceComplexityCoefficient,
+        complexityCoefficient: effectiveComplexity.coefficient,
+        complexitySource: effectiveComplexity.source,
         note: complexity?.note || ''
       };
     });
@@ -514,13 +567,9 @@ const updateBaseRate = async (req, res, next) => {
       throw createHttpError('Ngày kết thúc hiệu lực phải sau ngày áp dụng.');
     }
 
-    const duplicate = await SalaryRate.findOne({ effectiveFrom });
-    if (duplicate) {
-      throw createHttpError('Đã tồn tại mức tiền áp dụng từ ngày này.');
-    }
-
     const currentSetting = await ensureBaseSetting();
-    const currentRate = await getActiveSalaryRateForDate(effectiveFrom);
+    const existingRate = await SalaryRate.findOne({ effectiveFrom });
+    const currentRate = existingRate || await getActiveSalaryRateForDate(effectiveFrom);
     const before = currentRate ? toPlainObject(currentRate, SALARY_SETTING_LOG_FIELDS) : toPlainObject(currentSetting, ['baseHourlyRate']);
     const previousEffectiveTo = endOfDay(addDays(effectiveFrom, -1));
     await SalaryRate.updateMany(
@@ -531,29 +580,39 @@ const updateBaseRate = async (req, res, next) => {
       { $set: { effectiveTo: previousEffectiveTo, updatedBy: req.user._id } }
     );
 
-    const newRate = await SalaryRate.create({
-      baseHourlyRate,
-      effectiveFrom,
-      effectiveTo,
-      status: getRateStatusForToday(effectiveFrom, effectiveTo),
-      note: String(req.body.note || '').trim(),
-      createdBy: req.user._id,
-      updatedBy: req.user._id
-    });
+    let savedRate;
+    if (existingRate) {
+      existingRate.baseHourlyRate = baseHourlyRate;
+      existingRate.effectiveTo = effectiveTo;
+      existingRate.status = getRateStatusForToday(effectiveFrom, effectiveTo);
+      existingRate.note = String(req.body.note || '').trim();
+      existingRate.updatedBy = req.user._id;
+      savedRate = await existingRate.save();
+    } else {
+      savedRate = await SalaryRate.create({
+        baseHourlyRate,
+        effectiveFrom,
+        effectiveTo,
+        status: getRateStatusForToday(effectiveFrom, effectiveTo),
+        note: String(req.body.note || '').trim(),
+        createdBy: req.user._id,
+        updatedBy: req.user._id
+      });
+    }
     await refreshSalaryRateStatuses();
     const activeRate = await getActiveSalaryRateForDate(new Date());
     const setting = await SalarySetting.findOneAndUpdate(
       { key: 'BASE_RATE' },
       { baseHourlyRate: activeRate?.baseHourlyRate || baseHourlyRate, updatedBy: req.user._id },
-      { new: true, upsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, runValidators: true }
     );
     await recordConfigChange({
       resourceType: 'SALARY_SETTING',
-      resourceId: newRate._id,
+      resourceId: savedRate._id,
       resourceName: 'Tiền cơ bản một giờ',
-      action: 'CREATE',
+      action: existingRate ? 'UPDATE' : 'CREATE',
       before,
-      after: toPlainObject(newRate, SALARY_SETTING_LOG_FIELDS),
+      after: toPlainObject(savedRate, SALARY_SETTING_LOG_FIELDS),
       user: req.user
     });
     const rates = await SalaryRate.find().sort({ effectiveFrom: -1, createdAt: -1 }).lean();
@@ -604,7 +663,7 @@ const updateDoctorProfile = async (req, res, next) => {
         doctorCoefficient,
         updatedBy: req.user._id
       },
-      { new: true, upsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, runValidators: true }
     );
 
     res.json({
@@ -680,7 +739,7 @@ const updateShiftRules = async (req, res, next) => {
           status: rule.status || 'ACTIVE',
           updatedBy: req.user._id
         },
-        { new: true, upsert: true, runValidators: true }
+        { returnDocument: 'after', upsert: true, runValidators: true }
       );
       await recordConfigChange({
         resourceType: 'SHIFT_SALARY_RULE',
@@ -734,35 +793,58 @@ const getComplexities = async (req, res, next) => {
     };
     if (req.query.doctorId) filter.doctorId = req.query.doctorId;
 
-    const [appointments, complexities, doctors] = await Promise.all([
+    const [appointments, complexities, doctors, doctorProfiles] = await Promise.all([
       Appointment.find(filter)
         .populate('patientId', 'fullName patientCode phone')
         .populate('doctorId', 'fullName specialization')
         .populate('shiftId', 'name startTime endTime')
-        .populate('serviceId', 'name')
+        .populate('serviceId', 'name complexityCoefficient')
+        .populate('servicesPerformed.serviceId', 'name complexityCoefficient')
         .sort({ date: 1, queueNumber: 1 })
         .lean(),
       AppointmentComplexity.find({
         date: { $gte: period.start, $lte: period.end },
         ...(req.query.doctorId ? { doctorId: req.query.doctorId } : {})
       }).lean(),
-      User.find({ role: 'DOCTOR' }).select('fullName email phone specialization').sort({ fullName: 1 }).lean()
+      User.find({ role: 'DOCTOR' }).select('fullName email phone specialization').sort({ fullName: 1 }).lean(),
+      DoctorSalaryProfile.find().lean()
     ]);
 
     const complexityMap = new Map(complexities.map((item) => [item.appointmentId.toString(), item]));
+    const doctorProfileMap = new Map(doctorProfiles.map((profile) => [profile.doctorId.toString(), profile]));
+    const doctorsWithProfiles = doctors.map((doctor) => {
+      const profile = doctorProfileMap.get(doctor._id.toString());
+      return {
+        ...doctor,
+        degreeLevel: profile?.degreeLevel || 'UNIVERSITY'
+      };
+    });
     const data = appointments.map((appointment) => {
       const complexity = complexityMap.get(appointment._id.toString());
+      const serviceComplexityCoefficient = getAppointmentServiceComplexityCoefficient(appointment);
+      const effectiveComplexity = getEffectiveAppointmentComplexity(complexity, serviceComplexityCoefficient);
+      const appointmentDoctorId = appointment.doctorId?._id || appointment.doctorId;
+      const doctorProfile = appointmentDoctorId
+        ? doctorProfileMap.get(appointmentDoctorId.toString())
+        : null;
       return {
-        appointment,
+        appointment: {
+          ...appointment,
+          doctorProfile: {
+            degreeLevel: doctorProfile?.degreeLevel || 'UNIVERSITY'
+          }
+        },
         complexity: {
           _id: complexity?._id,
-          complexityCoefficient: normalizeNumber(complexity?.complexityCoefficient, 0),
+          complexityCoefficient: effectiveComplexity.coefficient,
+          serviceComplexityCoefficient,
+          source: effectiveComplexity.source,
           note: complexity?.note || ''
         }
       };
     });
 
-    res.json({ success: true, data, meta: { doctors } });
+    res.json({ success: true, data, meta: { doctors: doctorsWithProfiles } });
   } catch (error) {
     next(error);
   }
@@ -801,7 +883,7 @@ const updateComplexities = async (req, res, next) => {
           note: String(item.note || '').trim(),
           updatedBy: req.user._id
         },
-        { new: true, upsert: true, runValidators: true }
+        { returnDocument: 'after', upsert: true, runValidators: true }
       );
     }));
 
@@ -829,7 +911,7 @@ const generatePayslip = async (req, res, next) => {
     const payslip = await SalaryPayslip.findOneAndUpdate(
       { doctorId, month },
       payload,
-      { new: true, upsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, runValidators: true }
     );
 
     res.status(201).json({
@@ -1007,6 +1089,9 @@ const buildYearlyPayslipReport = async ({ year, doctorId, status }) => {
           phone: doctor.phone,
           specialization: doctor.specialization
         },
+        doctorDegreeLevel: payslip.doctorDegreeLevel,
+        doctorDegreeLabel: payslip.doctorDegreeLabel,
+        doctorCoefficient: payslip.doctorCoefficient,
         months: Array.from({ length: 12 }, (_, index) => ({
           month: monthFromYear(year, index),
           payslipId: null,

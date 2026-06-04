@@ -7,13 +7,17 @@ const statusMap = {
   'INACTIVE': 'Tạm khóa'
 };
 
+const formatCoefficient = (value) => new Intl.NumberFormat('vi-VN', {
+  maximumFractionDigits: 2
+}).format(Number(value) || 0);
+
 const ServiceManagement = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', duration: 30, status: 'ACTIVE' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', duration: 30, complexityCoefficient: 0, status: 'ACTIVE' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -45,9 +49,14 @@ const ServiceManagement = () => {
       setError('Mức giá phải là số hợp lệ lớn hơn 0');
       return;
     }
+    const complexityCoefficient = Number(form.complexityCoefficient);
+    if (!Number.isFinite(complexityCoefficient) || complexityCoefficient < 0 || complexityCoefficient > 0.5) {
+      setError('Hệ số độ khó phải nằm trong khoảng 0 đến 0.5');
+      return;
+    }
 
     try {
-      const payload = { ...form, price: cleanPrice, duration: Number(form.duration) };
+      const payload = { ...form, price: cleanPrice, duration: Number(form.duration), complexityCoefficient };
       if (editingId) {
         await updateService(editingId, payload);
         setSuccess('Cập nhật dịch vụ thành công!');
@@ -57,7 +66,7 @@ const ServiceManagement = () => {
       }
       setIsAddModalOpen(false);
       setEditingId(null);
-      setForm({ name: '', description: '', price: '', duration: 30, status: 'ACTIVE' });
+      setForm({ name: '', description: '', price: '', duration: 30, complexityCoefficient: 0, status: 'ACTIVE' });
       setHistoryRefreshKey((key) => key + 1);
       fetchServices();
       setTimeout(() => setSuccess(''), 3000);
@@ -73,6 +82,7 @@ const ServiceManagement = () => {
       description: svc.description || '',
       price: svc.price,
       duration: svc.duration,
+      complexityCoefficient: svc.complexityCoefficient ?? 0,
       status: svc.status
     });
     setIsAddModalOpen(true);
@@ -123,7 +133,7 @@ const ServiceManagement = () => {
           <p className="text-sm text-gray-500 font-medium mt-1">Quản lý danh mục dịch vụ nha khoa, mức giá và thời gian dự kiến.</p>
         </div>
         <button 
-          onClick={() => { setEditingId(null); setForm({ name: '', description: '', price: '', duration: 30, status: 'ACTIVE' }); setError(''); setIsAddModalOpen(true); }}
+          onClick={() => { setEditingId(null); setForm({ name: '', description: '', price: '', duration: 30, complexityCoefficient: 0, status: 'ACTIVE' }); setError(''); setIsAddModalOpen(true); }}
           className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold text-white bg-[#1e40af] hover:bg-[#1e3a8a] transition-all shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
@@ -162,6 +172,7 @@ const ServiceManagement = () => {
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tên dịch vụ</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mô tả</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Thời gian</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Độ khó</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mức giá</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Trạng thái</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Thao tác</th>
@@ -173,6 +184,12 @@ const ServiceManagement = () => {
                     <td className="px-6 py-4 font-bold text-slate-900 group-hover:text-[var(--color-primary)] transition-colors">{service.name}</td>
                     <td className="px-6 py-4 text-xs text-slate-500 max-w-[250px] truncate">{service.description || '—'}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-600">{service.duration} phút</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black text-blue-700 bg-blue-50 border border-blue-100">
+                        <span className="material-symbols-outlined text-[15px]">speed</span>
+                        HS {formatCoefficient(service.complexityCoefficient)}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 font-extrabold text-[#1e40af]">{formatPrice(service.price)}</td>
                     <td className="px-6 py-4">
                       <span className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-md w-max border ${service.status === 'ACTIVE' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
@@ -226,6 +243,24 @@ const ServiceManagement = () => {
                   <label className="text-xs font-bold text-slate-600">Thời gian dự kiến (phút) <span className="text-rose-500">*</span></label>
                   <input type="number" required value={form.duration} onChange={e => setForm({...form, duration: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="VD: 60" />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Hệ số độ khó dịch vụ <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">speed</span>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    max="0.5"
+                    step="0.1"
+                    value={form.complexityCoefficient}
+                    onChange={e => setForm({...form, complexityCoefficient: e.target.value})}
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="VD: 0.3"
+                  />
+                </div>
+                <p className="text-[11px] font-semibold text-slate-400">Dùng làm hệ số bệnh nhân mặc định khi tính lương, có thể chỉnh ngoại lệ ở UC4.3.</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-600">Trạng thái <span className="text-rose-500">*</span></label>

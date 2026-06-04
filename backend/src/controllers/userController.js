@@ -108,7 +108,7 @@ exports.createUser = async (req, res, next) => {
       await DoctorSalaryProfile.findOneAndUpdate(
         { doctorId: newUser._id },
         { $setOnInsert: { doctorId: newUser._id, updatedBy: req.user?._id } },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
       );
     }
 
@@ -173,7 +173,7 @@ exports.updateUser = async (req, res, next) => {
       await DoctorSalaryProfile.findOneAndUpdate(
         { doctorId: user._id },
         { $setOnInsert: { doctorId: user._id, updatedBy: req.user?._id } },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
       );
     }
 

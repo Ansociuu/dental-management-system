@@ -42,11 +42,11 @@ const seedData = async () => {
     // 1. Tạo Users (Bác sĩ & Nhân viên)
     const defaultPassword = '123456';
     const users = await User.create([
-      { fullName: 'BS. Nguyễn Hoàng Minh', email: 'minh.nguyen@mec.vn', phone: '0901234567', password: defaultPassword, role: 'DOCTOR', specialization: 'Implant & Phục hình', status: 'ACTIVE' },
-      { fullName: 'BS. Trần Thị Thanh Hương', email: 'huong.tran@mec.vn', phone: '0912345678', password: defaultPassword, role: 'DOCTOR', specialization: 'Chỉnh nha - Niềng răng', status: 'ACTIVE' },
-      { fullName: 'BS. Lê Minh Tâm', email: 'tam.le@mec.vn', phone: '0923456789', password: defaultPassword, role: 'DOCTOR', specialization: 'Nhổ răng khôn & Tiểu phẫu', status: 'ACTIVE' },
-      { fullName: 'BS. Phạm Văn Đức', email: 'duc.pham@mec.vn', phone: '0934567890', password: defaultPassword, role: 'DOCTOR', specialization: 'Răng sứ thẩm mỹ', status: 'ACTIVE' },
-      { fullName: 'BS. Hoàng Thị Mai', email: 'mai.hoang@mec.vn', phone: '0945678901', password: defaultPassword, role: 'DOCTOR', specialization: 'Nha khoa trẻ em', status: 'ACTIVE' },
+      { fullName: 'Nguyễn Hoàng Minh', email: 'minh.nguyen@mec.vn', phone: '0901234567', password: defaultPassword, role: 'DOCTOR', specialization: 'Implant & Phục hình', status: 'ACTIVE' },
+      { fullName: 'Trần Thị Thanh Hương', email: 'huong.tran@mec.vn', phone: '0912345678', password: defaultPassword, role: 'DOCTOR', specialization: 'Chỉnh nha - Niềng răng', status: 'ACTIVE' },
+      { fullName: 'Lê Minh Tâm', email: 'tam.le@mec.vn', phone: '0923456789', password: defaultPassword, role: 'DOCTOR', specialization: 'Nhổ răng khôn & Tiểu phẫu', status: 'ACTIVE' },
+      { fullName: 'Phạm Văn Đức', email: 'duc.pham@mec.vn', phone: '0934567890', password: defaultPassword, role: 'DOCTOR', specialization: 'Răng sứ thẩm mỹ', status: 'ACTIVE' },
+      { fullName: 'Hoàng Thị Mai', email: 'mai.hoang@mec.vn', phone: '0945678901', password: defaultPassword, role: 'DOCTOR', specialization: 'Nha khoa trẻ em', status: 'ACTIVE' },
       { fullName: 'Nguyễn Thị Lan', email: 'lan.nguyen@mec.vn', phone: '0956789012', password: defaultPassword, role: 'RECEPTIONIST', status: 'ACTIVE' },
       { fullName: 'Lê Thanh Quản (Manager)', email: 'manager@mec.vn', phone: '0978901234', password: defaultPassword, role: 'MANAGER', status: 'ACTIVE' },
       { fullName: 'Trần Văn Bình (Admin)', email: 'admin@mec.vn', phone: '0967890123', password: defaultPassword, role: 'ADMIN', status: 'ACTIVE' },
@@ -77,16 +77,16 @@ const seedData = async () => {
 
     // 2. Tạo Services (Dịch vụ nha khoa)
     const services = await Service.create([
-      { name: 'Khám tổng quát', description: 'Kiểm tra sức khỏe răng miệng toàn diện', price: 200000, duration: 30 },
-      { name: 'Nhổ răng khôn', description: 'Tiểu phẫu nhổ răng khôn mọc lệch', price: 1500000, duration: 60 },
-      { name: 'Tẩy trắng răng', description: 'Tẩy trắng răng bằng công nghệ Laser', price: 3000000, duration: 45 },
-      { name: 'Niềng răng mắc cài', description: 'Chỉnh nha bằng mắc cài kim loại/sứ', price: 35000000, duration: 60 },
-      { name: 'Niềng răng trong suốt', description: 'Chỉnh nha bằng khay trong suốt Invisalign', price: 65000000, duration: 45 },
-      { name: 'Trồng răng Implant', description: 'Cấy ghép Implant Titanium phục hồi răng mất', price: 15000000, duration: 90 },
-      { name: 'Bọc răng sứ', description: 'Phục hình thẩm mỹ bằng răng sứ cao cấp', price: 4000000, duration: 60 },
-      { name: 'Trám răng thẩm mỹ', description: 'Trám răng bằng Composite thẩm mỹ', price: 500000, duration: 30 },
-      { name: 'Lấy cao răng', description: 'Làm sạch cao răng và đánh bóng', price: 300000, duration: 30 },
-      { name: 'Điều trị tủy răng', description: 'Chữa viêm tủy, lấy tủy răng', price: 2000000, duration: 60 },
+      { name: 'Khám tổng quát', description: 'Kiểm tra sức khỏe răng miệng toàn diện', price: 200000, duration: 30, complexityCoefficient: 0 },
+      { name: 'Nhổ răng khôn', description: 'Tiểu phẫu nhổ răng khôn mọc lệch', price: 1500000, duration: 60, complexityCoefficient: 0.3 },
+      { name: 'Tẩy trắng răng', description: 'Tẩy trắng răng bằng công nghệ Laser', price: 3000000, duration: 45, complexityCoefficient: 0.1 },
+      { name: 'Niềng răng mắc cài', description: 'Chỉnh nha bằng mắc cài kim loại/sứ', price: 35000000, duration: 60, complexityCoefficient: 0.4 },
+      { name: 'Niềng răng trong suốt', description: 'Chỉnh nha bằng khay trong suốt Invisalign', price: 65000000, duration: 45, complexityCoefficient: 0.4 },
+      { name: 'Trồng răng Implant', description: 'Cấy ghép Implant Titanium phục hồi răng mất', price: 15000000, duration: 90, complexityCoefficient: 0.5 },
+      { name: 'Bọc răng sứ', description: 'Phục hình thẩm mỹ bằng răng sứ cao cấp', price: 4000000, duration: 60, complexityCoefficient: 0.2 },
+      { name: 'Trám răng thẩm mỹ', description: 'Trám răng bằng Composite thẩm mỹ', price: 500000, duration: 30, complexityCoefficient: 0.1 },
+      { name: 'Lấy cao răng', description: 'Làm sạch cao răng và đánh bóng', price: 300000, duration: 30, complexityCoefficient: 0 },
+      { name: 'Điều trị tủy răng', description: 'Chữa viêm tủy, lấy tủy răng', price: 2000000, duration: 60, complexityCoefficient: 0.4 },
     ]);
     console.log(`🦷 Đã tạo ${services.length} dịch vụ nha khoa`);
 

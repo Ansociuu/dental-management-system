@@ -1,7 +1,23 @@
 const Service = require('../models/Service');
 const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
 
-const SERVICE_LOG_FIELDS = ['name', 'description', 'price', 'duration', 'status'];
+const SERVICE_LOG_FIELDS = ['name', 'description', 'price', 'duration', 'complexityCoefficient', 'status'];
+
+const normalizeComplexityCoefficient = (value, fallback = 0) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.round(number * 100) / 100;
+};
+
+const validateComplexityCoefficient = (value) => {
+  const coefficient = normalizeComplexityCoefficient(value, 0);
+  if (coefficient < 0 || coefficient > 0.5) {
+    const error = new Error('Hệ số độ khó dịch vụ phải nằm trong khoảng 0 đến 0.5');
+    error.statusCode = 400;
+    throw error;
+  }
+  return coefficient;
+};
 
 // GET /api/v1/services
 exports.getServices = async (req, res, next) => {
@@ -26,7 +42,7 @@ exports.getServices = async (req, res, next) => {
 // POST /api/v1/services
 exports.createService = async (req, res, next) => {
   try {
-    const { name, description, price, duration, status } = req.body;
+    const { name, description, price, duration, complexityCoefficient, status } = req.body;
 
     const existing = await Service.findOne({ name });
     if (existing) {
@@ -38,6 +54,7 @@ exports.createService = async (req, res, next) => {
       description,
       price,
       duration,
+      complexityCoefficient: validateComplexityCoefficient(complexityCoefficient),
       status: status ? status.toUpperCase() : 'ACTIVE'
     });
 
@@ -60,7 +77,7 @@ exports.createService = async (req, res, next) => {
 // PUT /api/v1/services/:id
 exports.updateService = async (req, res, next) => {
   try {
-    const { name, description, price, duration, status } = req.body;
+    const { name, description, price, duration, complexityCoefficient, status } = req.body;
 
     const service = await Service.findById(req.params.id);
     if (!service) {
@@ -80,6 +97,9 @@ exports.updateService = async (req, res, next) => {
     if (description !== undefined) service.description = description;
     if (price !== undefined) service.price = price;
     if (duration !== undefined) service.duration = duration;
+    if (complexityCoefficient !== undefined) {
+      service.complexityCoefficient = validateComplexityCoefficient(complexityCoefficient);
+    }
     if (status) service.status = status.toUpperCase();
 
     await service.save();

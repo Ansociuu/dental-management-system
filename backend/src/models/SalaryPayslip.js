@@ -6,7 +6,9 @@ const salaryAppointmentLineSchema = new mongoose.Schema({
   patientName: { type: String },
   patientCode: { type: String },
   serviceName: { type: String },
+  serviceComplexityCoefficient: { type: Number, default: 0 },
   complexityCoefficient: { type: Number, default: 0 },
+  complexitySource: { type: String, enum: ['SERVICE_DEFAULT', 'MANUAL'], default: 'SERVICE_DEFAULT' },
   note: { type: String }
 }, { _id: false });
 

@@ -303,7 +303,7 @@ const updateAppointmentStatus = async (req, res, next) => {
       throw error;
     }
 
-    const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { new: true })
+    const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after' })
       .populate('patientId', 'fullName phone')
       .populate('doctorId', 'fullName')
       .populate('shiftId', 'name');

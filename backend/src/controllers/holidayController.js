@@ -109,7 +109,7 @@ const updateHoliday = async (req, res, next) => {
     }
 
     const before = toPlainObject(currentHoliday, HOLIDAY_LOG_FIELDS);
-    const holiday = await Holiday.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const holiday = await Holiday.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
     await recordConfigChange({
       resourceType: 'HOLIDAY',
       resourceId: holiday._id,
@@ -146,7 +146,7 @@ const updateHolidayStatus = async (req, res, next) => {
     }
 
     const before = toPlainObject(currentHoliday, HOLIDAY_LOG_FIELDS);
-    const holiday = await Holiday.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const holiday = await Holiday.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after' });
     await recordConfigChange({
       resourceType: 'HOLIDAY',
       resourceId: holiday._id,

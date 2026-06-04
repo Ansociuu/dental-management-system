@@ -92,7 +92,7 @@ const updateShift = async (req, res, next) => {
     );
 
     const before = toPlainObject(currentShift, SHIFT_LOG_FIELDS);
-    const shift = await Shift.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const shift = await Shift.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
     await recordConfigChange({
       resourceType: 'SHIFT',
       resourceId: shift._id,

@@ -254,7 +254,7 @@ const deleteDutySchedule = async (req, res, next) => {
       throw error;
     }
 
-    const duty = await DutySchedule.findByIdAndUpdate(req.params.id, { status: 'CANCELLED' }, { new: true });
+    const duty = await DutySchedule.findByIdAndUpdate(req.params.id, { status: 'CANCELLED' }, { returnDocument: 'after' });
     res.json({ success: true, message: 'Đã hủy lịch trực thành công' });
   } catch (error) {
     next(error);

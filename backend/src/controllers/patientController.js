@@ -72,7 +72,7 @@ const getPatientById = async (req, res, next) => {
  */
 const updatePatient = async (req, res, next) => {
   try {
-    const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
     if (!patient) {
       const error = new Error('Không tìm thấy bệnh nhân');
       error.statusCode = 404;
