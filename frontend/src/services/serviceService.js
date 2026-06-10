@@ -15,6 +15,18 @@ export const updateService = (id, data) => apiFetch(`/services/${id}`, {
   body: JSON.stringify(data),
 });
 
+export const getServicePriceHistory = (id) => apiFetch(`/services/${id}/price-history`);
+
+export const createServicePrice = (id, data) => apiFetch(`/services/${id}/price-history`, {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+
+export const bulkUpdateServicePrices = (data) => apiFetch('/services/prices/bulk', {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+
 export const deleteService = (id) => apiFetch(`/services/${id}`, {
   method: 'DELETE',
 });

@@ -20,12 +20,19 @@ const fieldLabels = {
   notes: 'Ghi chú',
   description: 'Mô tả',
   price: 'Giá',
-  duration: 'Thời gian'
+  duration: 'Thời gian',
+  category: 'Nhóm dịch vụ',
+  complexityCoefficient: 'Hệ số độ khó',
+  effectiveFrom: 'Ngày hiệu lực',
+  effectiveTo: 'Ngày kết thúc',
+  note: 'Ghi chú'
 };
 
 const statusLabels = {
   ACTIVE: 'Đang áp dụng',
-  INACTIVE: 'Tạm ngưng'
+  INACTIVE: 'Tạm ngưng',
+  SCHEDULED: 'Sắp áp dụng',
+  EXPIRED: 'Hết hiệu lực'
 };
 
 const holidayTypeLabels = {
@@ -50,7 +57,7 @@ const formatValue = (field, value) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(value) || 0);
   }
   if (field === 'duration') return `${value} phút`;
-  if (['startDate', 'endDate'].includes(field)) {
+  if (['startDate', 'endDate', 'effectiveFrom', 'effectiveTo'].includes(field)) {
     return new Date(value).toLocaleDateString('vi-VN');
   }
   return String(value);

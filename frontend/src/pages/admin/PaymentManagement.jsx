@@ -60,10 +60,10 @@ const getAppointmentItems = (appointment) => {
     });
   }
 
-  const unitPrice = Number(appointment?.serviceId?.price) || 0;
+  const unitPrice = Number(appointment?.servicePriceAtBooking || appointment?.serviceId?.price) || 0;
   return [{
     serviceId: appointment?.serviceId?._id || appointment?.serviceId,
-    name: appointment?.serviceId?.name || 'Dịch vụ khám',
+    name: appointment?.serviceNameAtBooking || appointment?.serviceId?.name || 'Dịch vụ khám',
     quantity: 1,
     unitPrice,
     lineTotal: unitPrice

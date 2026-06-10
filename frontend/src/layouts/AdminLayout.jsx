@@ -47,9 +47,7 @@ const AdminLayout = () => {
         { label: 'Hệ số ngày/ca', path: '/admin/payroll/shift-rules', permission: { module: 'payroll' } },
         { label: 'Ca phức tạp', path: '/admin/payroll/complexities', permission: { module: 'payroll' } },
         { label: 'Phiếu lương bác sĩ', path: '/admin/payroll/payslip', permission: { module: 'payroll' } },
-        { label: 'Tất cả bác sĩ / tháng', path: '/admin/payroll/monthly-report', permission: { module: 'payroll' } },
-        { label: 'Một bác sĩ / năm', path: '/admin/payroll/doctor-year-report', permission: { module: 'payroll' } },
-        { label: 'Tất cả bác sĩ / năm', path: '/admin/payroll/yearly-report', permission: { module: 'payroll' } }
+        { label: 'Báo cáo lương', path: '/admin/payroll/salary-report', permission: { module: 'payroll' } }
       ]
     },
     { icon: 'medical_services', label: 'Dịch vụ', path: '/admin/services', permission: { module: 'services' } },

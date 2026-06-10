@@ -75,12 +75,13 @@ const buildInvoiceItems = (appointment) => {
   }
 
   const unitPrice = Math.max(0, normalizeNumber(service.price, 0));
+  const bookedUnitPrice = Math.max(0, normalizeNumber(appointment.servicePriceAtBooking, unitPrice));
   return [{
     serviceId: service._id || service,
-    name: service.name || 'Dich vu kham',
+    name: appointment.serviceNameAtBooking || service.name || 'Dich vu kham',
     quantity: 1,
-    unitPrice,
-    lineTotal: unitPrice
+    unitPrice: bookedUnitPrice,
+    lineTotal: bookedUnitPrice
   }];
 };
 

@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
@@ -112,15 +112,16 @@ const payrollRouteMap = {
   shiftRules: 'shift-rules',
   complexities: 'complexities',
   payslip: 'payslip',
-  monthlyReport: 'monthly-report',
-  doctorYearReport: 'doctor-year-report',
-  yearlyReport: 'yearly-report'
+  salaryReport: 'salary-report'
 };
 
 const payrollKeyByRoute = Object.entries(payrollRouteMap).reduce((acc, [key, route]) => {
   acc[route] = key;
   return acc;
 }, {});
+payrollKeyByRoute['monthly-report'] = 'salaryReport';
+payrollKeyByRoute['doctor-year-report'] = 'salaryReport';
+payrollKeyByRoute['yearly-report'] = 'salaryReport';
 
 const getPayrollPath = (key) => `/admin/payroll/${payrollRouteMap[key] || payrollRouteMap.baseRate}`;
 
@@ -1626,6 +1627,439 @@ const YearlySalaryReport = () => {
   );
 };
 
+const SalaryReport = () => {
+  const [periodType, setPeriodType] = useState('MONTH');
+  const [month, setMonth] = useState(currentMonth());
+  const [year, setYear] = useState(currentYear());
+  const [doctorId, setDoctorId] = useState('ALL');
+  const [status, setStatus] = useState('ALL');
+  const [doctors, setDoctors] = useState([]);
+  const [monthlyRows, setMonthlyRows] = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState(null);
+  const [yearlyDoctorReport, setYearlyDoctorReport] = useState(null);
+  const [yearlyReport, setYearlyReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const isMonthly = periodType === 'MONTH';
+  const isAllDoctors = doctorId === 'ALL';
+  const reportScopeLabel = isAllDoctors ? 'Tất cả bác sĩ' : 'Một bác sĩ';
+  const periodLabel = isMonthly ? `Tháng ${month}` : `Năm ${year}`;
+
+  const loadDoctors = async () => {
+    try {
+      const res = await getSalaryDoctorProfiles();
+      setDoctors(res.data || []);
+    } catch (err) {
+      setError(err.message || 'Không thể tải danh sách bác sĩ');
+    }
+  };
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      if (isMonthly) {
+        const params = { month, status };
+        if (!isAllDoctors) params.doctorId = doctorId;
+        const res = await getSalaryMonthlyReport(params);
+        setMonthlyRows(res.data || []);
+        setMonthlySummary(res.summary || null);
+        setYearlyDoctorReport(null);
+        setYearlyReport(null);
+        return;
+      }
+
+      if (!isAllDoctors) {
+        const res = await getSalaryDoctorYearlyReport({ doctorId, year, status });
+        setYearlyDoctorReport(res.data);
+        setYearlyReport(null);
+        setMonthlyRows([]);
+        setMonthlySummary(null);
+        return;
+      }
+
+      const res = await getSalaryYearlyReport({ year, status });
+      setYearlyReport(res.data);
+      setYearlyDoctorReport(null);
+      setMonthlyRows([]);
+      setMonthlySummary(null);
+    } catch (err) {
+      setError(err.message || 'Không thể tải báo cáo lương');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDoctors();
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [periodType, month, year, doctorId, status]);
+
+  const currentRows = isMonthly
+    ? monthlyRows
+    : isAllDoctors
+      ? yearlyReport?.rows || []
+      : yearlyDoctorReport?.months || [];
+
+  const hasReportData = isMonthly
+    ? monthlyRows.length > 0
+    : isAllDoctors
+      ? (yearlyReport?.rows || []).length > 0
+      : (yearlyDoctorReport?.months || []).some((row) => row.payslipId || row.totalAmount > 0);
+
+  const summary = isMonthly
+    ? monthlySummary
+    : isAllDoctors
+      ? yearlyReport?.summary
+      : yearlyDoctorReport?.summary;
+
+  const exportCsv = () => {
+    if (isMonthly) {
+      downloadCsv(`bao-cao-luong-thang-${month}.csv`, [
+        'Bác sĩ',
+        'Email',
+        'Tháng',
+        'Trạng thái',
+        'Số ca',
+        'Số bệnh nhân',
+        'Giờ làm',
+        'Giờ quy đổi',
+        'Phụ cấp',
+        'Khấu trừ',
+        'Tổng lương'
+      ], monthlyRows.map((row) => [
+        row.doctor?.fullName || '',
+        row.doctor?.email || '',
+        row.month || month,
+        getPayslipStatusLabel(row.status),
+        row.totalShifts || 0,
+        row.totalAppointments || 0,
+        row.totalWorkingHours || 0,
+        row.totalConvertedHours || 0,
+        row.totalAllowance || 0,
+        row.totalDeduction || 0,
+        row.totalAmount || 0
+      ]));
+      return;
+    }
+
+    if (!isAllDoctors) {
+      const rows = yearlyDoctorReport?.months || [];
+      downloadCsv(`bao-cao-luong-${yearlyDoctorReport?.doctor?.fullName || 'bac-si'}-${year}.csv`, [
+        'Tháng',
+        'Trạng thái',
+        'Số ca',
+        'Giờ làm',
+        'Giờ quy đổi',
+        'Phụ cấp',
+        'Khấu trừ',
+        'Tổng lương'
+      ], rows.map((row) => [
+        row.month,
+        getPayslipStatusLabel(row.status),
+        row.totalShifts || 0,
+        row.totalWorkingHours || 0,
+        row.totalConvertedHours || 0,
+        row.totalAllowance || 0,
+        row.totalDeduction || 0,
+        row.totalAmount || 0
+      ]));
+      return;
+    }
+
+    const rows = yearlyReport?.rows || [];
+    downloadCsv(`bao-cao-luong-bac-si-${year}.csv`, [
+      'Bác sĩ',
+      'Email',
+      'Số phiếu',
+      'Tổng ca',
+      'Giờ làm',
+      'Giờ quy đổi',
+      'Hệ số ca TB',
+      'Tổng hệ số phức tạp',
+      'Phụ cấp',
+      'Khấu trừ',
+      'Tổng lương'
+    ], rows.map((row) => [
+      row.doctor?.fullName || '',
+      row.doctor?.email || '',
+      row.totalPayslips || 0,
+      row.totalShifts || 0,
+      row.totalWorkingHours || 0,
+      row.totalConvertedHours || 0,
+      row.averageShiftCoefficient || 0,
+      row.totalComplexityCoefficient || 0,
+      row.totalAllowance || 0,
+      row.totalDeduction || 0,
+      row.totalAmount || 0
+    ]));
+  };
+
+  const chartData = isMonthly
+    ? monthlyRows.map((row) => ({
+        name: row.doctor?.fullName || '-',
+        amount: row.totalAmount,
+        hours: row.totalConvertedHours
+      }))
+    : isAllDoctors
+      ? (yearlyReport?.months || []).map((row) => ({
+          month: row.month.slice(5),
+          amount: row.totalAmount,
+          doctors: row.totalDoctors
+        }))
+      : (yearlyDoctorReport?.months || []).map((row) => ({
+          month: row.month.slice(5),
+          amount: row.totalAmount,
+          hours: row.totalConvertedHours
+        }));
+
+  const title = isMonthly
+    ? 'Báo cáo tiền lương theo tháng'
+    : isAllDoctors
+      ? 'Báo cáo tiền lương tất cả bác sĩ theo năm'
+      : 'Báo cáo tiền lương một bác sĩ theo năm';
+
+  return (
+    <div>
+      <PanelHeader
+        eyebrow="Báo cáo lương"
+        title={title}
+        actions={(
+          <div className="flex flex-col xl:flex-row xl:items-center gap-3">
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setPeriodType('MONTH')}
+                className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${isMonthly ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Theo tháng
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodType('YEAR')}
+                className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${!isMonthly ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Theo năm
+              </button>
+            </div>
+            {isMonthly ? (
+              <input
+                type="month"
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+                className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+              />
+            ) : (
+              <input
+                type="number"
+                value={year}
+                onChange={(event) => setYear(event.target.value)}
+                className="w-32 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+              />
+            )}
+            <select
+              value={doctorId}
+              onChange={(event) => setDoctorId(event.target.value)}
+              className="min-w-[240px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">Tất cả bác sĩ</option>
+              {doctors.map((row) => (
+                <option key={row.doctor._id} value={row.doctor._id}>{formatProfileDoctorName(row)}</option>
+              ))}
+            </select>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="min-w-[170px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="ALL">Đã chốt trở lên</option>
+              <option value="FINALIZED">Đã chốt</option>
+              <option value="APPROVED">Đã duyệt</option>
+              <option value="PAID">Đã thanh toán</option>
+            </select>
+            <button type="button" onClick={load} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl" title="Xem báo cáo">
+              <span className="material-symbols-outlined text-[20px]">refresh</span>
+            </button>
+            <button type="button" onClick={exportCsv} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="Xuất Excel">
+              <span className="material-symbols-outlined text-[20px]">download</span>
+            </button>
+            <button type="button" onClick={() => window.print()} disabled={!hasReportData} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl" title="In / PDF">
+              <span className="material-symbols-outlined text-[20px]">print</span>
+            </button>
+          </div>
+        )}
+      />
+      <Alert>{error}</Alert>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-5">
+        <StatCard icon="manage_search" label="Phạm vi" value={reportScopeLabel} tone="blue" />
+        <StatCard icon="calendar_month" label="Kỳ báo cáo" value={periodLabel} tone="violet" />
+        <StatCard icon="description" label="Phiếu hợp lệ" value={summary?.totalPayslips || 0} tone="amber" />
+        <StatCard icon="event_available" label="Tổng ca" value={summary?.totalShifts || 0} tone="blue" />
+        <StatCard icon="payments" label={isMonthly ? 'Tổng lương tháng' : 'Tổng lương năm'} value={formatCurrency(summary?.totalAmount)} tone="emerald" />
+      </div>
+
+      <Panel className="p-5 mb-5">
+        {loading ? <LoadingState /> : !hasReportData ? (
+          <EmptyState icon="bar_chart" label="Không có phiếu lương hợp lệ trong bộ lọc" />
+        ) : (
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey={isMonthly ? 'name' : 'month'}
+                  tick={{ fontSize: 12 }}
+                  interval={0}
+                  angle={isMonthly ? -12 : 0}
+                  textAnchor={isMonthly ? 'end' : 'middle'}
+                  height={isMonthly ? 70 : 40}
+                />
+                <YAxis tickFormatter={(value) => `${Math.round(value / 1000000)}tr`} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value, key) => key === 'amount' ? formatCurrency(value) : formatNumber(value)} />
+                <Legend />
+                <Bar dataKey="amount" name="Tổng lương" fill="#2563eb" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Panel>
+
+      {isMonthly && <ReportTable rows={monthlyRows} loading={loading} />}
+
+      {!isMonthly && !isAllDoctors && (
+        <Panel className="overflow-hidden">
+          {loading ? (
+            <LoadingState />
+          ) : !hasReportData ? (
+            <EmptyState icon="calendar_month" label="Không có dữ liệu báo cáo" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                  <tr>
+                    <th className="px-5 py-4 font-black min-w-[120px]">Tháng</th>
+                    <th className="px-5 py-4 font-black min-w-[130px]">Trạng thái</th>
+                    <th className="px-5 py-4 font-black min-w-[100px]">Số ca</th>
+                    <th className="px-5 py-4 font-black min-w-[120px]">Giờ làm</th>
+                    <th className="px-5 py-4 font-black min-w-[140px]">Giờ quy đổi</th>
+                    <th className="px-5 py-4 font-black text-right min-w-[130px]">Phụ cấp</th>
+                    <th className="px-5 py-4 font-black text-right min-w-[130px]">Khấu trừ</th>
+                    <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentRows.map((row) => (
+                    <tr key={row.month} className="hover:bg-blue-50/30">
+                      <td className="px-5 py-4 font-black text-slate-900">{row.month}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{getPayslipStatusLabel(row.status)}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
+                      <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
+                      <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalAllowance)}</td>
+                      <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalDeduction)}</td>
+                      <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      )}
+
+      {!isMonthly && isAllDoctors && (
+        <>
+          <Panel className="overflow-hidden">
+            {loading ? (
+              <LoadingState />
+            ) : !hasReportData ? (
+              <EmptyState icon="calendar_month" label="Không có dữ liệu báo cáo" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                    <tr>
+                      <th className="px-5 py-4 font-black min-w-[220px]">Bác sĩ</th>
+                      <th className="px-5 py-4 font-black min-w-[120px]">Phiếu</th>
+                      <th className="px-5 py-4 font-black min-w-[120px]">Tổng ca</th>
+                      <th className="px-5 py-4 font-black min-w-[140px]">Giờ làm</th>
+                      <th className="px-5 py-4 font-black min-w-[150px]">Giờ quy đổi</th>
+                      <th className="px-5 py-4 font-black min-w-[150px]">Hệ số ca TB</th>
+                      <th className="px-5 py-4 font-black min-w-[150px]">Hệ số phức tạp</th>
+                      <th className="px-5 py-4 font-black text-right min-w-[140px]">Phụ cấp</th>
+                      <th className="px-5 py-4 font-black text-right min-w-[140px]">Khấu trừ</th>
+                      <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương năm</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {currentRows.map((row) => (
+                      <tr key={row.doctor?._id || row.doctor?.fullName} className="hover:bg-blue-50/30">
+                        <td className="px-5 py-4">
+                          <p className="font-black text-slate-900">{formatDoctorName(row.doctor, row.doctorDegreeLevel)}</p>
+                          <p className="text-xs font-semibold text-slate-500 mt-1">{row.doctor?.specialization || row.doctor?.email || '-'}</p>
+                        </td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{row.totalPayslips}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.averageShiftCoefficient)}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalComplexityCoefficient)}</td>
+                        <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalAllowance)}</td>
+                        <td className="px-5 py-4 text-right font-bold text-slate-700">{formatCurrency(row.totalDeduction)}</td>
+                        <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+
+          {hasReportData && (
+            <Panel className="overflow-hidden mt-5">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="font-black text-slate-900">Tổng hợp theo tháng</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                    <tr>
+                      <th className="px-5 py-4 font-black min-w-[120px]">Tháng</th>
+                      <th className="px-5 py-4 font-black min-w-[140px]">Bác sĩ có phiếu</th>
+                      <th className="px-5 py-4 font-black min-w-[120px]">Tổng ca</th>
+                      <th className="px-5 py-4 font-black min-w-[140px]">Giờ làm</th>
+                      <th className="px-5 py-4 font-black min-w-[150px]">Giờ quy đổi</th>
+                      <th className="px-5 py-4 font-black text-right min-w-[160px]">Tổng lương</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(yearlyReport?.months || []).map((row) => (
+                      <tr key={row.month} className="hover:bg-blue-50/30">
+                        <td className="px-5 py-4 font-black text-slate-900">{row.month}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{row.totalDoctors}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{row.totalShifts}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalWorkingHours)}</td>
+                        <td className="px-5 py-4 font-bold text-slate-700">{formatNumber(row.totalConvertedHours)}</td>
+                        <td className="px-5 py-4 text-right font-black text-blue-700">{formatCurrency(row.totalAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 const Payroll = () => {
   const navigate = useNavigate();
   const { section } = useParams();
@@ -1645,7 +2079,8 @@ const Payroll = () => {
     payslip: <DoctorMonthlyPayslip />,
     monthlyReport: <MonthlySalaryReport />,
     doctorYearReport: <DoctorYearlySalaryReport />,
-    yearlyReport: <YearlySalaryReport />
+    yearlyReport: <YearlySalaryReport />,
+    salaryReport: <SalaryReport />
   }[activeKey] || <BaseRateSettings />;
 
   return (

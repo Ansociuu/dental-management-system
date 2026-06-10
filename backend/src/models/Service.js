@@ -6,8 +6,13 @@ const mongoose = require('mongoose');
  */
 const serviceSchema = new mongoose.Schema({
   name: { type: String, required: [true, 'Tên dịch vụ là bắt buộc'], unique: true },
+  category: {
+    type: String,
+    trim: true,
+    default: 'Tổng quát'
+  },
   description: { type: String },
-  price: { type: Number, required: [true, 'Giá dịch vụ là bắt buộc'], min: 0 },
+  price: { type: Number, required: [true, 'Giá dịch vụ là bắt buộc'], min: [1, 'Giá dịch vụ phải lớn hơn 0'] },
   duration: {
     type: Number,
     default: 30,

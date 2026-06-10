@@ -1,7 +1,9 @@
 const Appointment = require('../models/Appointment');
 const DutySchedule = require('../models/DutySchedule');
 const Holiday = require('../models/Holiday');
+const Service = require('../models/Service');
 const Shift = require('../models/Shift');
+const { getEffectiveServicePrice } = require('../services/servicePriceService');
 
 // Helper to construct a robust 24-hour date range ignoring timezone shifts
 const getDayRange = (dateInput) => {
@@ -66,10 +68,18 @@ const createAppointment = async (req, res, next) => {
       throw error;
     }
 
-    // 3. Ràng buộc: Kiểm tra Full Slot
-    const shift = await Shift.findById(shiftId);
+    // 3. Ràng buộc: Kiểm tra dịch vụ và Full Slot
+    const [shift, service] = await Promise.all([
+      Shift.findById(shiftId),
+      Service.findOne({ _id: serviceId, status: 'ACTIVE' })
+    ]);
     if (!shift) {
       const error = new Error('Ca khám không tồn tại');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!service) {
+      const error = new Error('Dịch vụ không tồn tại hoặc đang tạm ngưng');
       error.statusCode = 404;
       throw error;
     }
@@ -90,15 +100,25 @@ const createAppointment = async (req, res, next) => {
     // 4. Tính số thứ tự khám trong ca
     const queueNumber = currentCount + 1;
 
+    const priceHistory = await getEffectiveServicePrice(service, appointmentDate);
     const appointment = await Appointment.create({
-      patientId, doctorId, shiftId, date: appointmentDate, serviceId, symptoms, queueNumber
+      patientId,
+      doctorId,
+      shiftId,
+      date: appointmentDate,
+      serviceId,
+      serviceNameAtBooking: service.name,
+      servicePriceAtBooking: priceHistory?.price || service.price,
+      servicePriceEffectiveFrom: priceHistory?.effectiveFrom,
+      symptoms,
+      queueNumber
     });
 
     const populated = await Appointment.findById(appointment._id)
       .populate('patientId', 'fullName phone patientCode')
       .populate('doctorId', 'fullName')
       .populate('shiftId', 'name startTime endTime')
-      .populate('serviceId', 'name');
+      .populate('serviceId', 'name price');
 
     res.status(201).json({ success: true, message: 'Đặt lịch khám thành công!', data: populated });
   } catch (error) {

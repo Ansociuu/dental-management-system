@@ -8,6 +8,7 @@ require('dotenv').config({ override: true });
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Service = require('../models/Service');
+const ServicePriceHistory = require('../models/ServicePriceHistory');
 const Shift = require('../models/Shift');
 const Patient = require('../models/Patient');
 const Holiday = require('../models/Holiday');
@@ -27,6 +28,7 @@ const seedData = async () => {
     // Xóa dữ liệu cũ
     await User.deleteMany({});
     await Service.deleteMany({});
+    await ServicePriceHistory.deleteMany({});
     await Shift.deleteMany({});
     await Patient.deleteMany({});
     await Holiday.deleteMany({});
@@ -77,17 +79,26 @@ const seedData = async () => {
 
     // 2. Tạo Services (Dịch vụ nha khoa)
     const services = await Service.create([
-      { name: 'Khám tổng quát', description: 'Kiểm tra sức khỏe răng miệng toàn diện', price: 200000, duration: 30, complexityCoefficient: 0 },
-      { name: 'Nhổ răng khôn', description: 'Tiểu phẫu nhổ răng khôn mọc lệch', price: 1500000, duration: 60, complexityCoefficient: 0.3 },
-      { name: 'Tẩy trắng răng', description: 'Tẩy trắng răng bằng công nghệ Laser', price: 3000000, duration: 45, complexityCoefficient: 0.1 },
-      { name: 'Niềng răng mắc cài', description: 'Chỉnh nha bằng mắc cài kim loại/sứ', price: 35000000, duration: 60, complexityCoefficient: 0.4 },
-      { name: 'Niềng răng trong suốt', description: 'Chỉnh nha bằng khay trong suốt Invisalign', price: 65000000, duration: 45, complexityCoefficient: 0.4 },
-      { name: 'Trồng răng Implant', description: 'Cấy ghép Implant Titanium phục hồi răng mất', price: 15000000, duration: 90, complexityCoefficient: 0.5 },
-      { name: 'Bọc răng sứ', description: 'Phục hình thẩm mỹ bằng răng sứ cao cấp', price: 4000000, duration: 60, complexityCoefficient: 0.2 },
-      { name: 'Trám răng thẩm mỹ', description: 'Trám răng bằng Composite thẩm mỹ', price: 500000, duration: 30, complexityCoefficient: 0.1 },
-      { name: 'Lấy cao răng', description: 'Làm sạch cao răng và đánh bóng', price: 300000, duration: 30, complexityCoefficient: 0 },
-      { name: 'Điều trị tủy răng', description: 'Chữa viêm tủy, lấy tủy răng', price: 2000000, duration: 60, complexityCoefficient: 0.4 },
+      { name: 'Khám tổng quát', category: 'Khám và tư vấn', description: 'Kiểm tra sức khỏe răng miệng toàn diện', price: 200000, duration: 30, complexityCoefficient: 0 },
+      { name: 'Nhổ răng khôn', category: 'Tiểu phẫu', description: 'Tiểu phẫu nhổ răng khôn mọc lệch', price: 1500000, duration: 60, complexityCoefficient: 0.3 },
+      { name: 'Tẩy trắng răng', category: 'Thẩm mỹ răng', description: 'Tẩy trắng răng bằng công nghệ Laser', price: 3000000, duration: 45, complexityCoefficient: 0.1 },
+      { name: 'Niềng răng mắc cài', category: 'Chỉnh nha', description: 'Chỉnh nha bằng mắc cài kim loại/sứ', price: 35000000, duration: 60, complexityCoefficient: 0.4 },
+      { name: 'Niềng răng trong suốt', category: 'Chỉnh nha', description: 'Chỉnh nha bằng khay trong suốt Invisalign', price: 65000000, duration: 45, complexityCoefficient: 0.4 },
+      { name: 'Trồng răng Implant', category: 'Cấy ghép Implant', description: 'Cấy ghép Implant Titanium phục hồi răng mất', price: 15000000, duration: 90, complexityCoefficient: 0.5 },
+      { name: 'Bọc răng sứ', category: 'Phục hình thẩm mỹ', description: 'Phục hình thẩm mỹ bằng răng sứ cao cấp', price: 4000000, duration: 60, complexityCoefficient: 0.2 },
+      { name: 'Trám răng thẩm mỹ', category: 'Nha khoa bảo tồn', description: 'Trám răng bằng Composite thẩm mỹ', price: 500000, duration: 30, complexityCoefficient: 0.1 },
+      { name: 'Lấy cao răng', category: 'Dự phòng', description: 'Làm sạch cao răng và đánh bóng', price: 300000, duration: 30, complexityCoefficient: 0 },
+      { name: 'Điều trị tủy răng', category: 'Nội nha', description: 'Chữa viêm tủy, lấy tủy răng', price: 2000000, duration: 60, complexityCoefficient: 0.4 },
     ]);
+    const initialPriceDate = new Date();
+    initialPriceDate.setHours(0, 0, 0, 0);
+    await ServicePriceHistory.create(services.map((service) => ({
+      serviceId: service._id,
+      price: service.price,
+      effectiveFrom: initialPriceDate,
+      status: 'ACTIVE',
+      note: 'Giá khởi tạo từ dữ liệu mẫu'
+    })));
     console.log(`🦷 Đã tạo ${services.length} dịch vụ nha khoa`);
 
     // 3. Tạo Shifts (Ca làm việc)

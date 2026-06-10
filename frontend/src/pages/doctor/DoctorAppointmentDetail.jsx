@@ -71,8 +71,8 @@ const DoctorAppointmentDetail = () => {
           // Default: Add the initial booked service to the performed list
           setServicesPerformed([{
             serviceId: apt.serviceId?._id,
-            name: apt.serviceId?.name,
-            priceAtAppointment: apt.serviceId?.price || 0,
+            name: apt.serviceNameAtBooking || apt.serviceId?.name,
+            priceAtAppointment: apt.servicePriceAtBooking || apt.serviceId?.price || 0,
             quantity: 1
           }]);
         }

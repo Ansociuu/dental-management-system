@@ -31,6 +31,9 @@ const appointmentSchema = new mongoose.Schema({
     ref: 'Service', 
     required: [true, 'Dịch vụ là bắt buộc'] 
   },
+  serviceNameAtBooking: { type: String },
+  servicePriceAtBooking: { type: Number },
+  servicePriceEffectiveFrom: { type: Date },
   symptoms: { type: String },
   status: { 
     type: String, 

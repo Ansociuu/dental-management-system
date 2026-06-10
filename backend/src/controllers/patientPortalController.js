@@ -6,6 +6,7 @@ const Patient = require('../models/Patient');
 const Service = require('../models/Service');
 const Shift = require('../models/Shift');
 const User = require('../models/User');
+const { ensureServicePriceHistories, getEffectiveServicePrice } = require('../services/servicePriceService');
 
 const BOOKING_OCCUPIED_STATUSES = ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS'];
 
@@ -272,8 +273,10 @@ const getBookingOptions = async (req, res, next) => {
       Service.find({ status: 'ACTIVE' }).sort({ name: 1 }),
       Shift.find({ status: 'ACTIVE' }).sort({ startTime: 1 })
     ]);
+    await ensureServicePriceHistories(services, req.user);
+    const refreshedServices = await Service.find({ status: 'ACTIVE' }).sort({ name: 1 });
 
-    res.json({ success: true, data: { services, shifts } });
+    res.json({ success: true, data: { services: refreshedServices, shifts } });
   } catch (error) {
     next(error);
   }
@@ -450,12 +453,16 @@ const createPortalAppointment = async (req, res, next) => {
       throw error;
     }
 
+    const priceHistory = await getEffectiveServicePrice(service, appointmentDate);
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       shiftId,
       date: appointmentDate,
       serviceId,
+      serviceNameAtBooking: service.name,
+      servicePriceAtBooking: priceHistory?.price || service.price,
+      servicePriceEffectiveFrom: priceHistory?.effectiveFrom,
       symptoms: symptoms ? String(symptoms).trim() : '',
       queueNumber: currentCount + 1,
       status: 'PENDING'
