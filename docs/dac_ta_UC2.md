@@ -738,3 +738,136 @@ Quy tắc nghiệp vụ
 - Lịch khám CANCELLED hoặc COMPLETED không được chỉnh sửa thông tin thời gian khám.
 - Không được xóa cứng lịch khám đã phát sinh dữ liệu liên quan.
 - Mọi thay đổi trạng thái phải được lưu lịch sử thao tác.
+Đặc tả UC2.6 - Quản lý Bệnh nhân
+
+Thuộc tính
+
+Mô tả
+
+Use Case ID
+
+UC2.6
+
+Use Case Name
+
+Quản lý Bệnh nhân
+
+Tác nhân chính
+
+Lễ tân
+
+Tác nhân liên quan
+
+Quản lý, Bệnh nhân
+
+Mô tả  
+
+Chức năng cho phép quản lý thông tin cơ bản của bệnh nhân như họ tên, ngày sinh, giới tính, số điện thoại, địa chỉ và thông tin liên hệ. Dữ liệu bệnh nhân được sử dụng trong đăng ký lịch khám, tiếp đón bệnh nhân và quản lý hồ sơ khám bệnh.
+
+Tiền điều kiện
+
+- Người dùng đã đăng nhập hệ thống.
+- Người dùng có quyền quản lý bệnh nhân.
+- Hệ thống hoạt động bình thường.
+
+Hậu điều kiện
+
+- Thông tin bệnh nhân được lưu thành công vào hệ thống.
+- Bệnh nhân có thể được sử dụng trong các chức năng đặt lịch khám và tiếp đón.
+- Lịch sử thay đổi được ghi nhận.
+
+Kích hoạt
+
+Người dùng chọn chức năng "Quản lý bệnh nhân" từ menu hệ thống.
+
+Luồng chính
+
+1. Người dùng truy cập chức năng "Quản lý bệnh nhân".
+2. Hệ thống hiển thị danh sách bệnh nhân.
+3. Người dùng chọn "Thêm mới".
+4. Hệ thống hiển thị form nhập thông tin bệnh nhân.
+5. Người dùng nhập:
+    - Họ và tên
+    - Ngày sinh
+    - Giới tính
+    - Số điện thoại
+    - Email (nếu có)
+    - Địa chỉ
+    - CCCD/CMND (nếu có)
+6. Người dùng nhấn "Lưu".
+7. Hệ thống kiểm tra dữ liệu hợp lệ.
+8. Hệ thống tạo mã bệnh nhân tự động.
+9. Lưu dữ liệu vào hệ thống.
+10. Hiển thị thông báo thành công.
+
+Luồng thay thế
+
+A1. Cập nhật thông tin bệnh nhân
+
+1. Người dùng chọn bệnh nhân cần chỉnh sửa.
+2. Cập nhật thông tin.
+3. Nhấn "Lưu".
+4. Hệ thống cập nhật dữ liệu thành công.
+
+A2. Tìm kiếm bệnh nhân
+
+1. Người dùng nhập tên, mã bệnh nhân hoặc số điện thoại.
+2. Hệ thống hiển thị danh sách phù hợp.
+
+A3. Xem chi tiết bệnh nhân
+
+1. Người dùng chọn bệnh nhân.
+2. Hệ thống hiển thị toàn bộ thông tin hành chính của bệnh nhân.
+
+A4. Khóa bệnh nhân
+
+1. Người dùng chọn bệnh nhân.
+2. Chọn "Ngưng hoạt động".
+3. Hệ thống chuyển trạng thái bệnh nhân sang INACTIVE.
+4. Không cho phép đăng ký lịch khám mới.
+
+Luồng ngoại lệ
+
+E1. Trùng số điện thoại với bệnh nhân đã tồn tại
+
+1. Hệ thống phát hiện dữ liệu trùng.
+2. Hiển thị cảnh báo.
+3. Cho phép người dùng kiểm tra lại thông tin.
+
+E2. Thiếu thông tin bắt buộc
+
+1. Hệ thống hiển thị lỗi.
+2. Không cho phép lưu.
+
+E3. Định dạng số điện thoại không hợp lệ
+
+1. Hệ thống hiển thị lỗi.
+2. Yêu cầu nhập lại.
+
+E4. Không đủ quyền truy cập
+
+1. Hệ thống từ chối thao tác.
+
+E5. Lỗi cơ sở dữ liệu
+
+1. Hệ thống hiển thị thông báo lỗi.
+2. Ghi log hệ thống.
+
+Yêu cầu đặc biệt  
+
+- Hỗ trợ tìm kiếm nhanh theo tên, mã bệnh nhân hoặc số điện thoại.
+- Hỗ trợ phân trang dữ liệu.
+- Hỗ trợ xuất danh sách bệnh nhân ra Excel/PDF.
+- Hỗ trợ lưu lịch sử thay đổi thông tin bệnh nhân.
+- Hỗ trợ liên kết với chức năng đăng ký lịch khám.
+
+Quy tắc nghiệp vụ
+
+- Mỗi bệnh nhân có một mã bệnh nhân duy nhất (Patient ID).
+- Số điện thoại không được trùng giữa các bệnh nhân đang hoạt động.
+- Họ tên và số điện thoại là thông tin bắt buộc.
+- Ngày sinh không được lớn hơn ngày hiện tại.
+- Không được xóa cứng bệnh nhân đã phát sinh lịch khám hoặc hồ sơ khám bệnh.
+- Khi cần loại bỏ bệnh nhân khỏi hệ thống chỉ được chuyển trạng thái sang INACTIVE.
+- Chỉ bệnh nhân ở trạng thái ACTIVE mới được đăng ký lịch khám mới.
+- Mọi thay đổi thông tin bệnh nhân phải được ghi nhận lịch sử cập nhật.

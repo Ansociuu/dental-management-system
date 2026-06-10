@@ -8,7 +8,6 @@ const roleMap = {
   'MANAGER': 'Quản lý',
   'ADMIN': 'Quản trị viên',
   'DOCTOR': 'Bác sĩ',
-  'NURSE': 'Y tá',
   'RECEPTIONIST': 'Lễ tân'
 };
 
@@ -16,7 +15,6 @@ const roleMapRev = {
   'Quản lý': 'MANAGER',
   'Quản trị viên': 'ADMIN',
   'Bác sĩ': 'DOCTOR',
-  'Y tá': 'NURSE',
   'Lễ tân': 'RECEPTIONIST'
 };
 
@@ -160,7 +158,6 @@ const UserManagement = () => {
       case 'ADMIN': return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'MANAGER': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
       case 'DOCTOR': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'NURSE': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'RECEPTIONIST': return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'PATIENT': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
@@ -234,7 +231,6 @@ const UserManagement = () => {
               <option value="">Tất cả vai trò</option>
               <option value="admin">Quản trị viên</option>
               <option value="doctor">Bác sĩ</option>
-              <option value="nurse">Y tá</option>
               <option value="receptionist">Lễ tân</option>
             </select>
           </div>
@@ -411,7 +407,6 @@ const UserManagement = () => {
                         {isAdmin && <option value="MANAGER">Quản lý (Manager)</option>}
                         <option value="DOCTOR">Bác sĩ (Doctor)</option>
                         {isAdmin && <option value="ADMIN">Quản trị viên (Admin)</option>}
-                        <option value="NURSE">Y tá (Nurse)</option>
                         <option value="RECEPTIONIST">Lễ tân (Receptionist)</option>
                       </select>
                     </div>

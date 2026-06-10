@@ -92,7 +92,6 @@ const AdminLayout = () => {
     'ADMIN': 'Quản trị',
     'MANAGER': 'Quản lý',
     'DOCTOR': 'Bác sĩ',
-    'NURSE': 'Y tá',
     'RECEPTIONIST': 'Lễ tân'
   };
 
