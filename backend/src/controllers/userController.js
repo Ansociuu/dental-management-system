@@ -1,7 +1,45 @@
 const User = require('../models/User');
 const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
+const Appointment = require('../models/Appointment');
+const DutySchedule = require('../models/DutySchedule');
+const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
 
 const PROTECTED_USER_ROLES = ['ADMIN', 'MANAGER'];
+const USER_LOG_FIELDS = [
+  'fullName', 'email', 'phone', 'role', 'specialization', 'status',
+  'dob', 'gender', 'licenseNumber', 'specialties', 'experience', 'avatar'
+];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\d{10}$/;
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+const validateUserInput = ({ fullName, email, phone, password, role, licenseNumber }, { creating = false } = {}) => {
+  if (creating && (!fullName || !email || !phone)) {
+    const error = new Error('Vui lòng nhập đầy đủ thông tin bắt buộc');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (email !== undefined && !EMAIL_PATTERN.test(String(email).trim())) {
+    const error = new Error('Email không đúng định dạng');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (phone !== undefined && !PHONE_PATTERN.test(String(phone).trim())) {
+    const error = new Error('Số điện thoại không đúng định dạng');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (password !== undefined && !STRONG_PASSWORD_PATTERN.test(String(password))) {
+    const error = new Error('Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (String(role || '').toUpperCase() === 'DOCTOR' && creating && !String(licenseNumber || '').trim()) {
+    const error = new Error('Vui lòng nhập Số chứng chỉ hành nghề');
+    error.statusCode = 400;
+    throw error;
+  }
+};
 
 const isManager = (user) => user?.role === 'MANAGER';
 
@@ -68,6 +106,7 @@ exports.createUser = async (req, res, next) => {
     const { fullName, email, phone, role, specialization, status, password,
             dob, gender, licenseNumber, specialties, experience, avatar } = req.body;
     const normalizedRole = role ? role.toUpperCase() : 'DOCTOR';
+    validateUserInput({ fullName, email, phone, password, role: normalizedRole, licenseNumber }, { creating: true });
 
     if (normalizedRole === 'PATIENT') {
       return res.status(400).json({ success: false, message: 'Tai khoan benh nhan phai dang ky qua cong benh nhan' });
@@ -112,6 +151,16 @@ exports.createUser = async (req, res, next) => {
       );
     }
 
+    await recordConfigChange({
+      resourceType: 'USER',
+      resourceId: newUser._id,
+      resourceName: newUser.fullName,
+      action: 'CREATE',
+      before: null,
+      after: toPlainObject(newUser, USER_LOG_FIELDS),
+      user: req.user
+    });
+
     res.status(201).json({ success: true, data: newUser });
   } catch (error) {
     next(error);
@@ -130,6 +179,8 @@ exports.updateUser = async (req, res, next) => {
     }
 
     ensureManagerCanManageUser(req.user, user);
+    validateUserInput({ fullName, email, phone, role, licenseNumber });
+    const before = toPlainObject(user, USER_LOG_FIELDS);
 
     // Check if email belongs to someone else
     if (email && email !== user.email) {
@@ -177,6 +228,18 @@ exports.updateUser = async (req, res, next) => {
       );
     }
 
+    await recordConfigChange({
+      resourceType: 'USER',
+      resourceId: user._id,
+      resourceName: user.fullName,
+      action: before.status !== user.status && Object.keys(req.body).length === 1 && req.body.status
+        ? 'STATUS_CHANGE'
+        : 'UPDATE',
+      before,
+      after: toPlainObject(user, USER_LOG_FIELDS),
+      user: req.user
+    });
+
     res.json({ success: true, data: user });
   } catch (error) {
     next(error);
@@ -193,7 +256,28 @@ exports.deleteUser = async (req, res, next) => {
 
     ensureManagerCanManageUser(req.user, user);
 
+    const [appointmentCount, dutyCount] = await Promise.all([
+      Appointment.countDocuments({ doctorId: user._id }),
+      DutySchedule.countDocuments({ doctorId: user._id })
+    ]);
+    if (appointmentCount > 0 || dutyCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không thể xóa tài khoản đã phát sinh dữ liệu. Vui lòng khóa tài khoản thay thế!'
+      });
+    }
+
+    const before = toPlainObject(user, USER_LOG_FIELDS);
     await User.findByIdAndDelete(req.params.id);
+    await recordConfigChange({
+      resourceType: 'USER',
+      resourceId: user._id,
+      resourceName: user.fullName,
+      action: 'DELETE',
+      before,
+      after: null,
+      user: req.user
+    });
     res.json({ success: true, message: 'Đã xóa người dùng thành công' });
   } catch (error) {
     next(error);

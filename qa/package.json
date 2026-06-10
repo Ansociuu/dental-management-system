@@ -5,9 +5,20 @@
   "type": "module",
   "scripts": {
     "test:e2e": "node e2e/selenium-smoke.mjs",
+    "test:e2e:uc1": "node e2e/uc1-tests.mjs",
+    "test:e2e:uc2": "node e2e/uc2-tests.mjs",
     "test:e2e:holidays": "node e2e/holiday-settings.mjs",
     "test:e2e:uc3": "node e2e/uc3-tests.mjs",
-    "test:performance:uc3": "node performance/uc3-autocannon.mjs",
+    "test:e2e:uc4": "node e2e/uc4-tests.mjs",
+    "test:e2e:all": "npm run test:e2e:uc1 && npm run test:e2e:uc2 && npm run test:e2e:uc3 && npm run test:e2e:uc4",
+    "test:performance:uc1": "node performance/uc-performance.mjs uc1",
+    "test:performance:uc2": "node performance/uc-performance.mjs uc2",
+    "test:performance:uc3": "node performance/uc-performance.mjs uc3",
+    "test:performance:uc4": "node performance/uc-performance.mjs uc4",
+    "test:performance:all": "node performance/uc-performance.mjs uc1 && node performance/uc-performance.mjs uc2 && node performance/uc-performance.mjs uc3 && node performance/uc-performance.mjs uc4",
+    "test:security": "node security/uc-security.mjs",
+    "test:zap": "powershell -ExecutionPolicy Bypass -File security/zap-baseline.ps1",
+    "test:all": "npm run test:e2e:all && npm run test:performance:all && npm run test:security",
     "test:performance": "node performance/autocannon-api.mjs"
   },
   "dependencies": {

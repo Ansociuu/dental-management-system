@@ -1,0 +1,482 @@
+{
+  "id": "0f8a0b08-2a64-4f35-8c7e-uc3seleniumide",
+  "version": "2.0",
+  "name": "MEC UC3 Selenium IDE Tests",
+  "url": "http://localhost:5173",
+  "tests": [
+    {
+      "id": "test-login-admin",
+      "name": "UC3_PRE_LOGIN_ADMIN",
+      "commands": [
+        {
+          "id": "admin-clear-session",
+          "comment": "Clear old login session before test",
+          "command": "executeScript",
+          "target": "window.localStorage.clear(); window.sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "admin-open-login",
+          "comment": "",
+          "command": "open",
+          "target": "/login",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "admin-set-window",
+          "comment": "",
+          "command": "setWindowSize",
+          "target": "1366x900",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "admin-wait-email",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "admin-type-email",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "admin@mec.vn"
+        },
+        {
+          "id": "admin-type-password",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"password\"]",
+          "targets": [],
+          "value": "123456"
+        },
+        {
+          "id": "admin-submit",
+          "comment": "",
+          "command": "click",
+          "target": "css=button[type=\"submit\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "admin-wait-dashboard",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=body",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "admin-verify-url",
+          "comment": "",
+          "command": "assertElementPresent",
+          "target": "css=body",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "test-uc31-monitor",
+      "name": "UC3.1_MONITOR_CHECK_IN_SCREEN",
+      "commands": [
+        {
+          "id": "uc31-clear-session",
+          "comment": "",
+          "command": "executeScript",
+          "target": "window.localStorage.clear(); window.sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-open-login",
+          "comment": "",
+          "command": "open",
+          "target": "/login",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-wait-email",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc31-type-email",
+          "comment": "Receptionist account",
+          "command": "type",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "lan.nguyen@mec.vn"
+        },
+        {
+          "id": "uc31-type-password",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"password\"]",
+          "targets": [],
+          "value": "123456"
+        },
+        {
+          "id": "uc31-submit",
+          "comment": "",
+          "command": "click",
+          "target": "css=button[type=\"submit\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-wait-login",
+          "comment": "",
+          "command": "pause",
+          "target": "2000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-open-monitor",
+          "comment": "Open UC3.1 appointment monitor screen",
+          "command": "open",
+          "target": "/receptionist/appointments/monitor",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-wait-date-filter",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"date\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc31-verify-status-filter",
+          "comment": "Status filter is available for check-in workflow",
+          "command": "assertElementPresent",
+          "target": "css=select",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc31-verify-body",
+          "comment": "",
+          "command": "assertElementPresent",
+          "target": "css=body",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "test-uc33-payments",
+      "name": "UC3.3_PAYMENT_SCREEN",
+      "commands": [
+        {
+          "id": "uc33-clear-session",
+          "comment": "",
+          "command": "executeScript",
+          "target": "window.localStorage.clear(); window.sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-open-login",
+          "comment": "",
+          "command": "open",
+          "target": "/login",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-wait-email",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc33-type-email",
+          "comment": "Receptionist account",
+          "command": "type",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "lan.nguyen@mec.vn"
+        },
+        {
+          "id": "uc33-type-password",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"password\"]",
+          "targets": [],
+          "value": "123456"
+        },
+        {
+          "id": "uc33-submit",
+          "comment": "",
+          "command": "click",
+          "target": "css=button[type=\"submit\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-wait-login",
+          "comment": "",
+          "command": "pause",
+          "target": "2000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-open-payments",
+          "comment": "Open UC3.3 payment screen",
+          "command": "open",
+          "target": "/receptionist/payments",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-wait-page",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=body",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc33-verify-date",
+          "comment": "Payment page has date filter",
+          "command": "assertElementPresent",
+          "target": "css=input[type=\"date\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc33-verify-payment-method",
+          "comment": "Payment page has payment method/filter controls",
+          "command": "assertElementPresent",
+          "target": "css=select",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "test-uc34-revenue",
+      "name": "UC3.4_REVENUE_REPORT_SCREEN",
+      "commands": [
+        {
+          "id": "uc34-clear-session",
+          "comment": "",
+          "command": "executeScript",
+          "target": "window.localStorage.clear(); window.sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-open-login",
+          "comment": "",
+          "command": "open",
+          "target": "/login",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-wait-email",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc34-type-email",
+          "comment": "Admin account",
+          "command": "type",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "admin@mec.vn"
+        },
+        {
+          "id": "uc34-type-password",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"password\"]",
+          "targets": [],
+          "value": "123456"
+        },
+        {
+          "id": "uc34-submit",
+          "comment": "",
+          "command": "click",
+          "target": "css=button[type=\"submit\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-wait-login",
+          "comment": "",
+          "command": "pause",
+          "target": "2000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-open-report",
+          "comment": "Open UC3.4 revenue report",
+          "command": "open",
+          "target": "/admin/reports/revenue",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-wait-date-filter",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"date\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc34-set-date-from",
+          "comment": "Workbook input: Tu 01/05/2024",
+          "command": "type",
+          "target": "css=input[type=\"date\"]:nth-of-type(1)",
+          "targets": [],
+          "value": "2024-05-01"
+        },
+        {
+          "id": "uc34-verify-method-filter",
+          "comment": "Revenue report has payment method filter",
+          "command": "assertElementPresent",
+          "target": "css=select",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc34-verify-body",
+          "comment": "",
+          "command": "assertElementPresent",
+          "target": "css=body",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "test-uc32-doctor",
+      "name": "UC3.2_DOCTOR_DASHBOARD_SCREEN",
+      "commands": [
+        {
+          "id": "uc32-clear-session",
+          "comment": "",
+          "command": "executeScript",
+          "target": "window.localStorage.clear(); window.sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc32-open-login",
+          "comment": "",
+          "command": "open",
+          "target": "/login",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc32-wait-email",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc32-type-email",
+          "comment": "Doctor account",
+          "command": "type",
+          "target": "css=input[type=\"email\"]",
+          "targets": [],
+          "value": "minh.nguyen@mec.vn"
+        },
+        {
+          "id": "uc32-type-password",
+          "comment": "",
+          "command": "type",
+          "target": "css=input[type=\"password\"]",
+          "targets": [],
+          "value": "123456"
+        },
+        {
+          "id": "uc32-submit",
+          "comment": "",
+          "command": "click",
+          "target": "css=button[type=\"submit\"]",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc32-wait-login",
+          "comment": "",
+          "command": "pause",
+          "target": "2000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc32-open-doctor-dashboard",
+          "comment": "Open doctor dashboard for UC3.2 entry point",
+          "command": "open",
+          "target": "/doctor/dashboard",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "uc32-wait-body",
+          "comment": "",
+          "command": "waitForElementVisible",
+          "target": "css=body",
+          "targets": [],
+          "value": "30000"
+        },
+        {
+          "id": "uc32-verify-body",
+          "comment": "",
+          "command": "assertElementPresent",
+          "target": "css=body",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "suite-uc3-smoke",
+      "name": "UC3 Selenium IDE Smoke Suite",
+      "persistSession": false,
+      "parallel": false,
+      "timeout": 300,
+      "tests": [
+        "test-login-admin",
+        "test-uc31-monitor",
+        "test-uc32-doctor",
+        "test-uc33-payments",
+        "test-uc34-revenue"
+      ]
+    }
+  ],
+  "urls": [
+    "http://localhost:5173/"
+  ],
+  "plugins": []
+}

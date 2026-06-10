@@ -7,7 +7,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.SEED_PASSWORD |
 const CONNECTIONS = Number(process.env.CONNECTIONS || 20);
 const DURATION = Number(process.env.DURATION || 15);
 const MAX_AVG_LATENCY_MS = Number(process.env.MAX_AVG_LATENCY_MS || 1000);
-const MAX_P95_LATENCY_MS = Number(process.env.MAX_P95_LATENCY_MS || 3000);
+const MAX_P97_5_LATENCY_MS = Number(process.env.MAX_P97_5_LATENCY_MS || 2000);
 const MIN_AVG_REQ_PER_SEC = Number(process.env.MIN_AVG_REQ_PER_SEC || 10);
 const PERF_STRICT = process.env.PERF_STRICT !== "false";
 
@@ -84,7 +84,7 @@ async function loadScenario(token, name, path) {
     requests: result.requests.total,
     averageReqPerSec: result.requests.average,
     averageLatencyMs: result.latency.average,
-    p95LatencyMs: result.latency.p95,
+    p97_5LatencyMs: result.latency.p97_5,
     errors: result.errors,
     timeouts: result.timeouts,
     non2xx: result.non2xx
@@ -97,8 +97,8 @@ async function loadScenario(token, name, path) {
   if (result.latency.average > MAX_AVG_LATENCY_MS) {
     failures.push(`avg latency ${result.latency.average}ms > ${MAX_AVG_LATENCY_MS}ms`);
   }
-  if (result.latency.p95 > MAX_P95_LATENCY_MS) {
-    failures.push(`p95 latency ${result.latency.p95}ms > ${MAX_P95_LATENCY_MS}ms`);
+  if (result.latency.p97_5 > MAX_P97_5_LATENCY_MS) {
+    failures.push(`p97.5 latency ${result.latency.p97_5}ms > ${MAX_P97_5_LATENCY_MS}ms`);
   }
   if (result.requests.average < MIN_AVG_REQ_PER_SEC) {
     failures.push(`throughput ${result.requests.average} req/s < ${MIN_AVG_REQ_PER_SEC} req/s`);
@@ -135,7 +135,7 @@ if (failed.length > 0) {
   console.table(failed.map((summary) => ({
     scenario: summary.scenario,
     averageLatencyMs: summary.averageLatencyMs,
-    p95LatencyMs: summary.p95LatencyMs,
+    p97_5LatencyMs: summary.p97_5LatencyMs,
     averageReqPerSec: summary.averageReqPerSec,
     failureReason: summary.failureReason
   })));

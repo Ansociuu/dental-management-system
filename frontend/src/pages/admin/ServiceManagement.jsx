@@ -45,8 +45,13 @@ const ServiceManagement = () => {
     setError(''); setSuccess('');
     // Clean price
     const cleanPrice = Number(String(form.price).replace(/[^0-9]/g, ''));
-    if (isNaN(cleanPrice) || cleanPrice <= 0) {
-      setError('Mức giá phải là số hợp lệ lớn hơn 0');
+    if (isNaN(cleanPrice) || cleanPrice < 0) {
+      setError('Mức giá phải là số hợp lệ lớn hơn hoặc bằng 0');
+      return;
+    }
+    const duration = Number(form.duration);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      setError('Thời gian thực hiện phải lớn hơn 0 phút');
       return;
     }
     const complexityCoefficient = Number(form.complexityCoefficient);
@@ -56,7 +61,7 @@ const ServiceManagement = () => {
     }
 
     try {
-      const payload = { ...form, price: cleanPrice, duration: Number(form.duration), complexityCoefficient };
+      const payload = { ...form, price: cleanPrice, duration, complexityCoefficient };
       if (editingId) {
         await updateService(editingId, payload);
         setSuccess('Cập nhật dịch vụ thành công!');

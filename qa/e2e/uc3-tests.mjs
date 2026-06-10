@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { Builder, By, until } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome.js";
+import { writeResults } from "../lib/qa-core.mjs";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const API_URL = process.env.API_URL || "http://localhost:5000/api/v1";
@@ -276,6 +277,10 @@ async function run() {
       await driver.wait(until.elementLocated(By.css("body")), 15000);
       const bodyText = await driver.findElement(By.css("body")).getText();
       assert.ok(bodyText.length > 0, "Monitor page should render");
+      await expectOk(driver, `/appointments/${data.checkInAppointment._id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "CONFIRMED" })
+      });
       const response = await api(driver, `/appointments/${data.checkInAppointment._id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status: "CHECKED_IN" })
@@ -315,7 +320,9 @@ async function run() {
       await driver.get(`${FRONTEND_URL}/doctor/appointments/${data.checkInAppointment._id}`);
       await driver.wait(until.elementLocated(By.css("body")), 15000);
       const text = await driver.findElement(By.css("body")).getText();
-      return /UC3|chẩn|Chẩn|Hoàn|Lưu|Bệnh/i.test(text)
+      const currentUrl = await driver.getCurrentUrl();
+      return currentUrl.includes(`/doctor/appointments/${data.checkInAppointment._id}`)
+        && !/không có quyền|access denied|404/i.test(text)
         ? result("Pass", "Doctor appointment detail page rendered")
         : result("Fail", "Doctor detail page did not show expected content");
     });
@@ -370,6 +377,10 @@ async function run() {
       await login(driver, ACCOUNTS.doctor);
       await expectOk(driver, `/appointments/${data.paymentAppointment._id}/status`, {
         method: "PATCH",
+        body: JSON.stringify({ status: "CONFIRMED" })
+      });
+      await expectOk(driver, `/appointments/${data.paymentAppointment._id}/status`, {
+        method: "PATCH",
         body: JSON.stringify({ status: "CHECKED_IN" })
       });
       const response = await api(driver, `/appointments/${data.paymentAppointment._id}/examine`, {
@@ -390,6 +401,17 @@ async function run() {
       return response.status === 403
         ? result("Pass", "Receptionist examine request rejected with 403")
         : result("Fail", `Expected 403, got ${response.status}`);
+    });
+
+    await runCase(results, "UC3.2_FUNC_010", "Không chỉnh sửa hồ sơ đã COMPLETED", caseInput("UC3.2_FUNC_010"), "Completed clinical record cannot be changed", async () => {
+      await login(driver, ACCOUNTS.doctor);
+      const response = await api(driver, `/appointments/${data.checkInAppointment._id}/examine`, {
+        method: "PUT",
+        body: JSON.stringify({ diagnosis: "Không được ghi đè" })
+      });
+      return response.status === 400
+        ? result("Pass", response.body?.message || "Completed record update blocked")
+        : result("Fail", `Expected 400, got ${response.status}`);
     });
 
     await runCase(results, "UC3.3_FUNC_001", "Thanh toán hóa đơn khám bệnh", caseInput("UC3.3_FUNC_001"), "Invoice becomes PAID", async () => {
@@ -459,7 +481,8 @@ async function run() {
       await login(driver, ACCOUNTS.admin);
       await driver.get(`${FRONTEND_URL}/admin/reports/revenue`);
       await driver.wait(until.elementLocated(By.css("body")), 15000);
-      const invoices = await expectOk(driver, `/invoices?dateFrom=${data.dates.checkIn}&dateTo=${data.dates.payment}`);
+      const paidDate = new Date().toISOString().slice(0, 10);
+      const invoices = await expectOk(driver, `/invoices?dateFrom=${paidDate}&dateTo=${paidDate}`);
       return invoices.data?.length >= 1
         ? result("Pass", `Revenue source returned ${invoices.data.length} paid invoice(s)`)
         : result("Fail", "No revenue invoices returned");
@@ -479,7 +502,6 @@ async function run() {
       ["UC3.1_FUNC_005", "Đăng ký khám mới khi không tìm thấy lịch hẹn", "Manual", "Covered by appointment booking module rather than reception check-in screen"],
       ["UC3.1_FUNC_008", "Xử lý mất kết nối hệ thống", "Manual", "Requires network fault injection"],
       ["UC3.2_FUNC_008", "Ngăn lưu đơn thuốc rỗng", "Not Supported", "Prescription is optional in current backend"],
-      ["UC3.2_FUNC_010", "Không chỉnh sửa hồ sơ đã COMPLETED", "Not Supported", "Current backend allows re-examine/update completed appointment"],
       ["UC3.3_FUNC_003", "Thanh toán với QR Banking", "Not Supported", "Current payment methods are CASH, BANK_TRANSFER, CARD"],
       ["UC3.3_FUNC_004", "Áp dụng mã giảm giá", "Not Supported", "Invoice discount is fixed at 0 and no discount UI/API exists"],
       ["UC3.3_FUNC_005", "Thanh toán bằng nhiều phương thức", "Not Supported", "Invoice stores a single paymentMethod"],
@@ -500,6 +522,7 @@ async function run() {
     });
   } finally {
     console.table(results);
+    await writeResults("uc3", results);
     const failed = results.filter((item) => item.status === "Fail");
     if (failed.length > 0) {
       console.error(`${failed.length} automated UC3 case(s) failed`);

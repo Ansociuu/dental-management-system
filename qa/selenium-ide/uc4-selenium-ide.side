@@ -1,0 +1,24 @@
+{
+  "id": "uc4-mec-suite",
+  "version": "2.0",
+  "name": "MEC - UC4",
+  "url": "http://localhost:5173",
+  "tests": [{
+    "id": "uc4-login-payroll",
+    "name": "UC4 - Đăng nhập và mở các màn hình tính lương",
+    "commands": [
+      {"id":"1","comment":"","command":"open","target":"/login","targets":[],"value":""},
+      {"id":"2","comment":"","command":"type","target":"css=input[type=\"email\"]","targets":[],"value":"admin@mec.vn"},
+      {"id":"3","comment":"","command":"type","target":"css=input[type=\"password\"]","targets":[],"value":"123456"},
+      {"id":"4","comment":"","command":"click","target":"css=button[type=\"submit\"]","targets":[],"value":""},
+      {"id":"5","comment":"","command":"waitForElementVisible","target":"css=aside","targets":[],"value":"30000"},
+      {"id":"6","comment":"","command":"open","target":"/admin/payroll/base-rate","targets":[],"value":""},
+      {"id":"7","comment":"","command":"waitForElementVisible","target":"css=body","targets":[],"value":"30000"},
+      {"id":"8","comment":"","command":"open","target":"/admin/payroll/monthly-report","targets":[],"value":""},
+      {"id":"9","comment":"","command":"waitForElementVisible","target":"css=body","targets":[],"value":"30000"}
+    ]
+  }],
+  "suites": [{"id":"uc4-suite","name":"UC4","persistSession":false,"parallel":false,"timeout":300,"tests":["uc4-login-payroll"]}],
+  "urls": ["http://localhost:5173"],
+  "plugins": []
+}

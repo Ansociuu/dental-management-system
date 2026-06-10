@@ -40,7 +40,17 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [newUser, setNewUser] = useState({ fullName: '', email: '', phone: '', role: 'DOCTOR', status: 'ACTIVE', specialization: '' });
+  const emptyUserForm = {
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'DOCTOR',
+    status: 'ACTIVE',
+    specialization: '',
+    licenseNumber: ''
+  };
+  const [newUser, setNewUser] = useState(emptyUserForm);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -82,7 +92,7 @@ const UserManagement = () => {
       }
       setIsAddModalOpen(false);
       setEditingId(null);
-      setNewUser({ fullName: '', email: '', phone: '', role: 'DOCTOR', status: 'ACTIVE', specialization: '' });
+      setNewUser(emptyUserForm);
       fetchUsers();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -103,7 +113,8 @@ const UserManagement = () => {
       phone: u.phone,
       role: u.role,
       status: u.status,
-      specialization: u.specialization || ''
+      specialization: u.specialization || '',
+      licenseNumber: u.licenseNumber || ''
     });
     setIsAddModalOpen(true);
   };
@@ -185,7 +196,7 @@ const UserManagement = () => {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => { setEditingId(null); setNewUser({ fullName: '', email: '', phone: '', role: 'DOCTOR', status: 'ACTIVE', specialization: '' }); setError(''); setIsAddModalOpen(true); }}
+            onClick={() => { setEditingId(null); setNewUser(emptyUserForm); setError(''); setIsAddModalOpen(true); }}
             className="flex items-center gap-2 bg-gradient-to-r from-[var(--color-primary)] to-blue-600 hover:from-blue-700 hover:to-blue-800 text-white px-7 py-2.5 rounded-xl font-semibold shadow-md shadow-blue-500/20 transition-all hover:-translate-y-0.5"
           >
             <span className="material-symbols-outlined text-[20px]">person_add</span>
@@ -373,6 +384,22 @@ const UserManagement = () => {
                     </div>
                   </div>
 
+                  {!editingId && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">Mật khẩu <span className="text-rose-500">*</span></label>
+                      <input
+                        type="password"
+                        required
+                        minLength="8"
+                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                        title="Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-600">Vai trò <span className="text-rose-500">*</span></label>
@@ -411,6 +438,19 @@ const UserManagement = () => {
                       className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                     />
                   </div>
+
+                  {newUser.role === 'DOCTOR' && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">Số chứng chỉ hành nghề <span className="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        value={newUser.licenseNumber}
+                        onChange={(e) => setNewUser({...newUser, licenseNumber: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  )}
                 </section>
               </form>
             </div>

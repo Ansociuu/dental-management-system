@@ -1,0 +1,24 @@
+{
+  "id": "uc2-mec-suite",
+  "version": "2.0",
+  "name": "MEC - UC2",
+  "url": "http://localhost:5173",
+  "tests": [{
+    "id": "uc2-login-scheduling",
+    "name": "UC2 - Đăng nhập và mở các màn hình lịch",
+    "commands": [
+      {"id":"1","comment":"","command":"open","target":"/login","targets":[],"value":""},
+      {"id":"2","comment":"","command":"type","target":"css=input[type=\"email\"]","targets":[],"value":"admin@mec.vn"},
+      {"id":"3","comment":"","command":"type","target":"css=input[type=\"password\"]","targets":[],"value":"123456"},
+      {"id":"4","comment":"","command":"click","target":"css=button[type=\"submit\"]","targets":[],"value":""},
+      {"id":"5","comment":"","command":"waitForElementVisible","target":"css=aside","targets":[],"value":"30000"},
+      {"id":"6","comment":"","command":"open","target":"/admin/holidays","targets":[],"value":""},
+      {"id":"7","comment":"","command":"waitForElementVisible","target":"css=table","targets":[],"value":"30000"},
+      {"id":"8","comment":"","command":"open","target":"/admin/appointments/monitor","targets":[],"value":""},
+      {"id":"9","comment":"","command":"waitForElementVisible","target":"css=body","targets":[],"value":"30000"}
+    ]
+  }],
+  "suites": [{"id":"uc2-suite","name":"UC2","persistSession":false,"parallel":false,"timeout":300,"tests":["uc2-login-scheduling"]}],
+  "urls": ["http://localhost:5173"],
+  "plugins": []
+}

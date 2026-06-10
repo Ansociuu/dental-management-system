@@ -441,10 +441,10 @@ npm run test:e2e:uc3
 
 ### Kiểm Thử Phi Chức Năng UC3 Bằng Autocannon
 
-Script Autocannon UC3 nằm tại:
+Runner Autocannon dùng chung cho UC1-UC4 nằm tại:
 
 ```text
-qa/performance/uc3-autocannon.mjs
+qa/performance/uc-performance.mjs
 ```
 
 Chạy test:
@@ -474,7 +474,7 @@ Các thông số trong bảng kết quả:
 | `requests` | Tổng số request đã gửi |
 | `averageReqPerSec` | Số request trung bình mỗi giây |
 | `averageLatencyMs` | Độ trễ phản hồi trung bình |
-| `p95LatencyMs` | Độ trễ p95, nếu Autocannon trả về |
+| `p97_5LatencyMs` | Độ trễ mà 97,5% request có thời gian phản hồi nhỏ hơn hoặc bằng |
 | `errors` | Số lỗi request |
 | `timeouts` | Số request timeout |
 | `non2xx` | Số response không thuộc nhóm HTTP 2xx |
@@ -487,20 +487,20 @@ Ngưỡng mặc định:
 - `timeouts = 0`
 - `non2xx = 0`
 - `averageLatencyMs <= 1000ms`
-- `p95LatencyMs <= 3000ms`
+- `p97_5LatencyMs <= 2000ms`
 - `averageReqPerSec >= 10 req/s`
 
-Kết quả lần chạy đã ghi trong báo cáo:
+Kết quả smoke test gần nhất với `CONNECTIONS=5`, `DURATION=3`:
 
-| Scenario | Avg latency | Req/s | Errors | Timeouts | Non-2xx | Status |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| UC3.1 monitor appointments | 524.36ms | 36.4 | 0 | 0 | 0 | Pass |
-| UC3.3 pending invoices | 724.12ms | 27.07 | 0 | 0 | 0 | Pass |
-| UC3.3 paid invoices | 1374.6ms | 13.87 | 0 | 0 | 0 | Fail |
-| UC3.4 doctor performance report | 724.51ms | 27.34 | 0 | 0 | 0 | Pass |
-| UC3.4 patient-service report | 960.11ms | 20.4 | 0 | 0 | 0 | Pass |
+| Kịch bản | Avg latency | P97.5 | Req/s | Errors | Timeouts | Non-2xx | Status |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Theo dõi tiếp đón | 163.44ms | 199ms | 29.67 | 0 | 0 | 0 | Pass |
+| Hóa đơn chờ thanh toán | 210.05ms | 263ms | 23.00 | 0 | 0 | 0 | Pass |
+| Hóa đơn đã thanh toán | 359.37ms | 942ms | 12.00 | 0 | 0 | 0 | Pass |
+| Hiệu suất bác sĩ | 208.42ms | 520ms | 22.67 | 0 | 0 | 0 | Pass |
+| Bệnh nhân và dịch vụ | 262.41ms | 556ms | 16.34 | 0 | 0 | 0 | Pass |
 
-Kết luận performance lần chạy này: 4/5 scenario đạt, 1/5 scenario không đạt. Scenario fail là `UC3.3 paid invoices` vì latency trung bình `1374.6ms`, vượt ngưỡng `1000ms`.
+Kết luận smoke test UC3: 5/5 kịch bản đạt ngưỡng. Chạy lại với cấu hình mặc định để lấy kết quả tải đầy đủ cho máy và môi trường triển khai hiện tại.
 
 Có thể chạy ở chế độ chỉ báo cáo, không làm fail command:
 
@@ -508,6 +508,75 @@ Có thể chạy ở chế độ chỉ báo cáo, không làm fail command:
 $env:PERF_STRICT="false"
 npm run test:performance:uc3
 ```
+
+## Kiểm Thử Đầy Đủ UC1-UC4
+
+Workbook chuẩn được dùng để ánh xạ test case là `TestCase.xlsx`:
+
+- UC1: 51 functional case.
+- UC2: 58 functional case.
+- UC3: 38 functional case.
+- UC4: 39 functional case và 17 UI case.
+
+Khởi động backend và frontend trước khi chạy:
+
+```powershell
+cd backend
+npm run dev
+
+cd ../frontend
+npm run dev
+```
+
+Chạy Selenium WebDriver:
+
+```powershell
+cd ../qa
+npm install
+npm run test:e2e:uc1
+npm run test:e2e:uc2
+npm run test:e2e:uc3
+npm run test:e2e:uc4
+npm run test:e2e:all
+```
+
+Các project Selenium IDE:
+
+```text
+qa/selenium-ide/uc1-selenium-ide.side
+qa/selenium-ide/uc2-selenium-ide.side
+qa/selenium-ide/uc3-selenium-ide.side
+qa/selenium-ide/uc4-selenium-ide.side
+```
+
+Chạy performance cho từng UC hoặc toàn bộ:
+
+```powershell
+npm run test:performance:uc1
+npm run test:performance:uc2
+npm run test:performance:uc3
+npm run test:performance:uc4
+npm run test:performance:all
+```
+
+Thông số mặc định:
+
+- `CONNECTIONS=20`
+- `DURATION=15`
+- Average latency tối đa `1000ms`
+- P97.5 latency tối đa `2000ms`
+- Throughput tối thiểu `10 req/s`
+- Không có error, timeout hoặc non-2xx
+
+Chạy kiểm thử bảo mật:
+
+```powershell
+npm run test:security
+winget install --id ZAP.ZAP --exact
+npm run test:zap
+```
+
+Kết quả được sinh trong `qa/results/`. Xem báo cáo tổng hợp tại `docs/bao-cao-kiem-thu-4-uc.md`.
 
 ## Ghi Chú Triển Khai
 

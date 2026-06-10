@@ -303,16 +303,33 @@ const updateAppointmentStatus = async (req, res, next) => {
       throw error;
     }
 
-    const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after' })
-      .populate('patientId', 'fullName phone')
-      .populate('doctorId', 'fullName')
-      .populate('shiftId', 'name');
-
+    const appointment = await Appointment.findById(req.params.id);
     if (!appointment) {
       const error = new Error('Không tìm thấy lịch khám');
       error.statusCode = 404;
       throw error;
     }
+
+    const allowedTransitions = {
+      PENDING: ['CONFIRMED', 'CANCELLED', 'NO_SHOW'],
+      CONFIRMED: ['CHECKED_IN', 'CANCELLED', 'NO_SHOW'],
+      CHECKED_IN: ['IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+      IN_PROGRESS: ['COMPLETED', 'CANCELLED', 'NO_SHOW'],
+      COMPLETED: [],
+      CANCELLED: [],
+      NO_SHOW: []
+    };
+    if (!allowedTransitions[appointment.status]?.includes(status)) {
+      const error = new Error(`Không thể chuyển trạng thái từ ${appointment.status} sang ${status}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    appointment.status = status;
+    await appointment.save();
+    await appointment.populate('patientId', 'fullName phone');
+    await appointment.populate('doctorId', 'fullName');
+    await appointment.populate('shiftId', 'name');
     res.json({ success: true, message: `Cập nhật trạng thái thành ${status}`, data: appointment });
   } catch (error) {
     next(error);
@@ -364,6 +381,17 @@ const examineAppointment = async (req, res, next) => {
     if (req.user.role === 'DOCTOR' && appointment.doctorId.toString() !== req.user._id.toString()) {
       const error = new Error('Bạn không được phân công phụ trách ca khám này.');
       error.statusCode = 403;
+      throw error;
+    }
+
+    if (!['CHECKED_IN', 'IN_PROGRESS'].includes(appointment.status)) {
+      const error = new Error('Chỉ có thể cập nhật hồ sơ khi lịch khám đang CHECKED_IN hoặc IN_PROGRESS');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!String(diagnosis || '').trim()) {
+      const error = new Error('Chẩn đoán là bắt buộc trước khi hoàn tất khám');
+      error.statusCode = 400;
       throw error;
     }
 

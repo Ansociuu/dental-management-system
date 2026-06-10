@@ -1,4 +1,6 @@
 const Service = require('../models/Service');
+const Appointment = require('../models/Appointment');
+const Invoice = require('../models/Invoice');
 const { recordConfigChange, toPlainObject } = require('../services/configChangeLogService');
 
 const SERVICE_LOG_FIELDS = ['name', 'description', 'price', 'duration', 'complexityCoefficient', 'status'];
@@ -17,6 +19,24 @@ const validateComplexityCoefficient = (value) => {
     throw error;
   }
   return coefficient;
+};
+
+const validateServiceInput = ({ name, price, duration }, { creating = false } = {}) => {
+  if (creating && !String(name || '').trim()) {
+    const error = new Error('Vui lòng nhập Tên dịch vụ');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (price !== undefined && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
+    const error = new Error('Giá dịch vụ phải lớn hơn hoặc bằng 0');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (duration !== undefined && (!Number.isFinite(Number(duration)) || Number(duration) <= 0)) {
+    const error = new Error('Thời gian thực hiện phải lớn hơn 0 phút');
+    error.statusCode = 400;
+    throw error;
+  }
 };
 
 // GET /api/v1/services
@@ -43,6 +63,7 @@ exports.getServices = async (req, res, next) => {
 exports.createService = async (req, res, next) => {
   try {
     const { name, description, price, duration, complexityCoefficient, status } = req.body;
+    validateServiceInput({ name, price, duration }, { creating: true });
 
     const existing = await Service.findOne({ name });
     if (existing) {
@@ -78,6 +99,7 @@ exports.createService = async (req, res, next) => {
 exports.updateService = async (req, res, next) => {
   try {
     const { name, description, price, duration, complexityCoefficient, status } = req.body;
+    validateServiceInput({ name, price, duration });
 
     const service = await Service.findById(req.params.id);
     if (!service) {
@@ -124,6 +146,22 @@ exports.deleteService = async (req, res, next) => {
     const service = await Service.findById(req.params.id);
     if (!service) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy dịch vụ' });
+    }
+
+    const [appointmentCount, invoiceCount] = await Promise.all([
+      Appointment.countDocuments({
+        $or: [
+          { serviceId: service._id },
+          { 'servicesPerformed.serviceId': service._id }
+        ]
+      }),
+      Invoice.countDocuments({ 'items.serviceId': service._id })
+    ]);
+    if (appointmentCount > 0 || invoiceCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không thể xóa dịch vụ đã phát sinh dữ liệu. Vui lòng chọn Ngưng sử dụng!'
+      });
     }
 
     await Service.findByIdAndDelete(req.params.id);

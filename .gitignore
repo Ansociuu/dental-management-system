@@ -27,8 +27,12 @@ dist-ssr
 docs/BT6_Dac_ta_phan_mem_quan_ly_nha_khoa.md
 docs/mockup_nhom_chuc_nang_2.drawio
 backend/.env
-docs/testing-plan.md
 backend/.env
-README.md
+
+# Kết quả sinh tự động, không lưu vào Git
+qa/results/
+N01.TH1_G05_KiemThu.pdf
+docs/bao-cao-kiem-thu-4-uc.md
+docs/testing-plan.md
 docs/uc3-automated-testing-report.md
-qa/selenium-ide/uc3-selenium-ide.side
+docs/tai-lieu-kiem-thu.md
