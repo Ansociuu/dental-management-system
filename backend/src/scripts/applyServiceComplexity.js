@@ -2,7 +2,7 @@
  * Áp hệ số độ khó mặc định cho dịch vụ hiện có.
  * Chạy: npm run apply-service-complexity
  */
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const mongoose = require('mongoose');
 const Service = require('../models/Service');
 

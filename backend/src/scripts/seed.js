@@ -4,7 +4,7 @@
  * 
  * Tạo dữ liệu mẫu ngẫu nhiên cho: Users (Bác sĩ), Services, Shifts, Patients, DutySchedules
  */
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Service = require('../models/Service');

@@ -2,7 +2,7 @@
  * Xóa unique index cũ shiftId + dayOfWeek của bảng ShiftSalaryRule.
  * Chạy: npm run fix-shift-rule-indexes
  */
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const mongoose = require('mongoose');
 const ShiftSalaryRule = require('../models/ShiftSalaryRule');
 
