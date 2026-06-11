@@ -1,9 +1,10 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { filterMenuByPermission } from '../utils/permissions';
 
 const DoctorLayout = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: 'dashboard', label: 'Bảng điều khiển', path: '/doctor/dashboard', permission: { module: 'dashboard' } },
@@ -14,6 +15,11 @@ const DoctorLayout = () => {
   ];
 
   const visibleMenuItems = filterMenuByPermission(menuItems, user);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="flex h-screen bg-slate-100 font-body">
@@ -74,7 +80,7 @@ const DoctorLayout = () => {
           <ul className="space-y-2">
             <li>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-400 hover:bg-rose-950/20 hover:shadow-sm transition-all group text-left"
               >
                 <span className="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">

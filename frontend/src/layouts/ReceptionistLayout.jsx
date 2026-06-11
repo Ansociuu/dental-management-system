@@ -1,9 +1,10 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { filterMenuByPermission, hasPermission } from '../utils/permissions';
 
 const ReceptionistLayout = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: 'dashboard', label: 'Tổng quan', path: '/receptionist/dashboard', permission: { module: 'dashboard' } },
@@ -16,6 +17,11 @@ const ReceptionistLayout = () => {
   ];
 
   const visibleMenuItems = filterMenuByPermission(menuItems, user);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 font-body">
@@ -79,7 +85,7 @@ const ReceptionistLayout = () => {
 
         <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 hover:shadow-sm transition-all group text-left"
           >
             <span className="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">logout</span>

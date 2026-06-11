@@ -1,6 +1,4 @@
-import React from 'react';
-
-const Offers = () => {
+const Offers = ({ onBookNow, onShowPricing }) => {
   return (
     <section id="pricing" className="section-padding overflow-hidden relative" style={{ backgroundColor: 'var(--surface-container-highest)' }}>
       {/* Decorative background element - softer contrast */}
@@ -35,7 +33,7 @@ const Offers = () => {
               </div>
             </div>
 
-            <button className="btn-secondary px-10 py-4">Xem bảng giá chi tiết</button>
+            <button type="button" onClick={onShowPricing} className="btn-secondary px-10 py-4">Xem bảng giá chi tiết</button>
           </div>
 
           <div id="contact" className="relative z-10">
@@ -45,7 +43,13 @@ const Offers = () => {
                 <p className="text-on-surface-variant text-sm">Để lại thông tin, bác sĩ sẽ tư vấn miễn phí cho bạn.</p>
               </div>
               
-              <form className="space-y-6">
+              <form
+                className="space-y-6"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onBookNow?.();
+                }}
+              >
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-primary uppercase tracking-widest ml-1">Họ và tên</label>
                   <input 
@@ -86,7 +90,7 @@ const Offers = () => {
                   />
                 </div>
 
-                <button className="btn-primary w-full mt-4 py-5 text-lg shadow-xl shadow-primary/20">
+                <button type="submit" className="btn-primary w-full mt-4 py-5 text-lg shadow-xl shadow-primary/20">
                   Gửi yêu cầu đặt hẹn
                 </button>
                 

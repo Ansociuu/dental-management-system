@@ -1,7 +1,6 @@
-import React from 'react';
 import heroImg from '../assets/landingpage/herosecs.png';
 
-const Hero = () => {
+const Hero = ({ onBookNow, onConsultation }) => {
   return (
     <section className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-[#f7f9fb]">
       {/* Background Image & Overlay */}
@@ -33,11 +32,19 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-6">
-            <button className="btn-primary flex items-center justify-center gap-2 text-lg group">
+            <button
+              type="button"
+              onClick={onBookNow}
+              className="btn-primary flex items-center justify-center gap-2 text-lg group"
+            >
               Đặt lịch khám ngay
               <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </button>
-            <button className="btn-secondary flex items-center justify-center gap-2 text-lg group">
+            <button
+              type="button"
+              onClick={onConsultation}
+              className="btn-secondary flex items-center justify-center gap-2 text-lg group"
+            >
               <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">call</span>
               Tư vấn miễn phí
             </button>
