@@ -50,6 +50,10 @@ const getPermissionsForRole = async (role) => {
 };
 
 const seedDefaultPermissions = async () => {
+  const User = require('../models/User');
+  await User.updateMany({ role: 'NURSE' }, { role: 'DOCTOR' });
+  await RolePermission.deleteMany({ role: 'NURSE' });
+
   const roles = Object.keys(DEFAULT_ROLE_PERMISSIONS);
   await Promise.all(roles.map((role) => ensureRolePermission(role)));
 };

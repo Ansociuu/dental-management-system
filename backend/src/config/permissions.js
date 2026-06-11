@@ -65,15 +65,6 @@ const DEFAULT_ROLE_PERMISSIONS = {
     settings: readOnly,
     doctorDuty: readOnly
   }),
-  NURSE: makePermissions({
-    dashboard: readOnly,
-    appointments: readOnly,
-    patients: readOnly,
-    records: readOnly,
-    services: readOnly,
-    settings: readOnly,
-    doctorDuty: readOnly
-  }),
   PATIENT: makePermissions({})
 };
 

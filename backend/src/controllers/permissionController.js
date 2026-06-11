@@ -9,17 +9,16 @@ const {
 const { ensureRolePermission, seedDefaultPermissions } = require('../services/permissionService');
 
 const ROLE_LABELS = {
-  ADMIN: 'Quan tri vien',
-  MANAGER: 'Quan ly',
-  DOCTOR: 'Bac si',
-  NURSE: 'Y ta',
-  RECEPTIONIST: 'Le tan'
+  ADMIN: 'Quản trị viên',
+  MANAGER: 'Quản lý',
+  DOCTOR: 'Bác sĩ',
+  RECEPTIONIST: 'Lễ tân'
 };
 
 const getPermissions = async (req, res, next) => {
   try {
     await seedDefaultPermissions();
-    const rows = await RolePermission.find({})
+    const rows = await RolePermission.find({ role: { $in: ['ADMIN', 'MANAGER', 'DOCTOR', 'RECEPTIONIST'] } })
       .populate('updatedBy', 'fullName role')
       .sort({ role: 1 });
 
