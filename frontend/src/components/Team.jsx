@@ -1,4 +1,8 @@
 import React from 'react';
+import bsDoanh from '../assets/landingpage/bs_doanh.png';
+import bsAn from '../assets/landingpage/bs_an.png';
+import bsNgoc from '../assets/landingpage/bs_ngoc.png';
+import bsVu from '../assets/landingpage/bs_vu.png';
 
 const doctors = [
   {
@@ -6,28 +10,28 @@ const doctors = [
     name: 'BS. Nguyễn Tiến Doanh',
     role: 'Giám đốc chuyên môn',
     specialty: 'Chuyên gia Chỉnh nha & Niềng răng',
-    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394134088.png'
+    img: bsDoanh
   },
   {
     id: 2,
     name: 'BS. Nguyễn Văn An',
     role: 'Bác sĩ chuyên khoa II',
     specialty: 'Chuyên gia Răng sứ thẩm mỹ',
-    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394150669.png'
+    img: bsAn
   },
   {
     id: 3,
     name: 'BS. Phạm Thị Minh Ngọc',
     role: 'Tiến sĩ Nha khoa',
     specialty: 'Chuyên gia Implant',
-    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394143772.png'
+    img: bsNgoc
   },
   {
     id: 4,
     name: 'BS. Từ Hữu Minh Vũ',
     role: 'Thạc sĩ Y khoa',
     specialty: 'Chuyên gia Nha khoa Tổng quát',
-    img: 'C:/Users/acern/.gemini/antigravity/brain/b4d63ee5-3ecb-47c9-b55c-a3ecc292c6ff/media__1777394157221.png'
+    img: bsVu
   }
 ];
 
