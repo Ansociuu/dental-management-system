@@ -3,7 +3,16 @@ const mongoose = require('mongoose');
 const configChangeLogSchema = new mongoose.Schema({
   resourceType: {
     type: String,
-    enum: ['SHIFT', 'HOLIDAY', 'SERVICE', 'SERVICE_PRICE', 'USER', 'SALARY_SETTING', 'SHIFT_SALARY_RULE'],
+    enum: [
+      'SHIFT',
+      'HOLIDAY',
+      'SERVICE',
+      'SERVICE_PRICE',
+      'USER',
+      'SALARY_SETTING',
+      'DOCTOR_SALARY_COEFFICIENT',
+      'SHIFT_SALARY_RULE'
+    ],
     required: true,
     index: true
   },

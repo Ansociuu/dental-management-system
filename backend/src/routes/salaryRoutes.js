@@ -4,6 +4,8 @@ const {
   getBaseRate,
   updateBaseRate,
   getDoctorProfiles,
+  getDegreeCoefficients,
+  updateDegreeCoefficient,
   updateDoctorProfile,
   getShiftRules,
   updateShiftRules,
@@ -24,6 +26,8 @@ router.put('/settings/base-rate', requirePermission('payroll', 'update'), update
 
 router.get('/doctor-profiles', requirePermission('payroll', 'view'), getDoctorProfiles);
 router.put('/doctor-profiles/:doctorId', requirePermission('payroll', 'update'), updateDoctorProfile);
+router.get('/degree-coefficients', requirePermission('payroll', 'view'), getDegreeCoefficients);
+router.put('/degree-coefficients/:degreeLevel', requirePermission('payroll', 'update'), updateDegreeCoefficient);
 
 router.get('/shift-rules', requirePermission('payroll', 'view'), getShiftRules);
 router.put('/shift-rules', requirePermission('payroll', 'update'), updateShiftRules);

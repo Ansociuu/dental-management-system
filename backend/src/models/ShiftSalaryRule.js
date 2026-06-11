@@ -8,7 +8,7 @@ const shiftSalaryRuleSchema = new mongoose.Schema({
   },
   dayType: {
     type: String,
-    enum: ['WEEKDAY_OFFICE', 'WEEKDAY_AFTER_HOURS', 'SATURDAY', 'SUNDAY', 'HOLIDAY'],
+    enum: ['WEEKDAY_OFFICE', 'SATURDAY', 'SUNDAY', 'HOLIDAY'],
     required: true,
     default: 'WEEKDAY_OFFICE'
   },

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { getConfigChangeLogs } from '../services/configChangeLogService';
 
@@ -23,6 +24,13 @@ const fieldLabels = {
   duration: 'Thời gian',
   category: 'Nhóm dịch vụ',
   complexityCoefficient: 'Hệ số độ khó',
+  coefficient: 'Hệ số bác sĩ',
+  degreeLevel: 'Mã bằng cấp',
+  degreeLabel: 'Bằng cấp',
+  shiftId: 'Ca làm việc',
+  dayType: 'Loại ngày',
+  dayOfWeek: 'Ngày trong tuần',
+  shiftCoefficient: 'Hệ số ca',
   effectiveFrom: 'Ngày hiệu lực',
   effectiveTo: 'Ngày kết thúc',
   note: 'Ghi chú'
@@ -41,6 +49,22 @@ const holidayTypeLabels = {
   DAC_BIET: 'Đặc biệt'
 };
 
+const dayTypeLabels = {
+  WEEKDAY_OFFICE: 'Ngày thường',
+  WEEKDAY_AFTER_HOURS: 'Ngày thường (ngoài giờ)',
+  SATURDAY: 'Thứ 7',
+  SUNDAY: 'Chủ nhật',
+  HOLIDAY: 'Ngày lễ'
+};
+
+const degreeLevelLabels = {
+  UNIVERSITY: 'Đại học',
+  MASTER: 'Thạc sĩ',
+  DOCTORATE: 'Tiến sĩ',
+  ASSOCIATE_PROFESSOR: 'Phó giáo sư',
+  PROFESSOR: 'Giáo sư'
+};
+
 const formatDateTime = (value) => new Date(value).toLocaleString('vi-VN', {
   hour: '2-digit',
   minute: '2-digit',
@@ -53,6 +77,8 @@ const formatValue = (field, value) => {
   if (value === undefined || value === null || value === '') return 'Trống';
   if (field === 'status') return statusLabels[value] || value;
   if (field === 'holidayType') return holidayTypeLabels[value] || value;
+  if (field === 'dayType') return dayTypeLabels[value] || value;
+  if (field === 'degreeLevel') return degreeLevelLabels[value] || value;
   if (field === 'price') {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(value) || 0);
   }

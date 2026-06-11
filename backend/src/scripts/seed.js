@@ -15,6 +15,7 @@ const Holiday = require('../models/Holiday');
 const DutySchedule = require('../models/DutySchedule');
 const SalaryRate = require('../models/SalaryRate');
 const SalarySetting = require('../models/SalarySetting');
+const DoctorDegreeCoefficient = require('../models/DoctorDegreeCoefficient');
 const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
 const ShiftSalaryRule = require('../models/ShiftSalaryRule');
 const AppointmentComplexity = require('../models/AppointmentComplexity');
@@ -35,6 +36,7 @@ const seedData = async () => {
     await DutySchedule.deleteMany({});
     await SalaryRate.deleteMany({});
     await SalarySetting.deleteMany({});
+    await DoctorDegreeCoefficient.deleteMany({});
     await DoctorSalaryProfile.deleteMany({});
     await ShiftSalaryRule.deleteMany({});
     await AppointmentComplexity.deleteMany({});
@@ -64,16 +66,26 @@ const seedData = async () => {
       status: 'ACTIVE',
       note: 'Mức tiền mặc định'
     });
+    const degreeCoefficients = [
+      { degreeLevel: 'UNIVERSITY', degreeLabel: 'Đại học', coefficient: 1.3 },
+      { degreeLevel: 'MASTER', degreeLabel: 'Thạc sĩ', coefficient: 1.5 },
+      { degreeLevel: 'DOCTORATE', degreeLabel: 'Tiến sĩ', coefficient: 1.7 },
+      { degreeLevel: 'ASSOCIATE_PROFESSOR', degreeLabel: 'Phó giáo sư', coefficient: 2.0 },
+      { degreeLevel: 'PROFESSOR', degreeLabel: 'Giáo sư', coefficient: 2.5 }
+    ];
+    await DoctorDegreeCoefficient.create(degreeCoefficients);
+    const degreeCoefficientMap = new Map(degreeCoefficients.map((item) => [item.degreeLevel, item.coefficient]));
     const degreeSamples = [
-      { degreeLevel: 'DOCTORATE', doctorCoefficient: 2.0 },
-      { degreeLevel: 'MASTER', doctorCoefficient: 1.5 },
-      { degreeLevel: 'UNIVERSITY', doctorCoefficient: 1.2 },
-      { degreeLevel: 'ASSOCIATE_PROFESSOR', doctorCoefficient: 2.5 },
-      { degreeLevel: 'PROFESSOR', doctorCoefficient: 3.0 }
+      { degreeLevel: 'DOCTORATE' },
+      { degreeLevel: 'MASTER' },
+      { degreeLevel: 'UNIVERSITY' },
+      { degreeLevel: 'ASSOCIATE_PROFESSOR' },
+      { degreeLevel: 'PROFESSOR' }
     ];
     await DoctorSalaryProfile.create(doctorsList.map((doctor, index) => ({
       doctorId: doctor._id,
-      ...degreeSamples[index % degreeSamples.length]
+      ...degreeSamples[index % degreeSamples.length],
+      doctorCoefficient: degreeCoefficientMap.get(degreeSamples[index % degreeSamples.length].degreeLevel)
     })));
     console.log(`💰 Đã tạo cấu hình lương mặc định cho ${doctorsList.length} Bác sĩ`);
 
@@ -111,7 +123,6 @@ const seedData = async () => {
 
     const dayTypeDayOfWeek = {
       WEEKDAY_OFFICE: -1,
-      WEEKDAY_AFTER_HOURS: -2,
       SATURDAY: 6,
       SUNDAY: 0,
       HOLIDAY: -3
@@ -120,7 +131,7 @@ const seedData = async () => {
     const defaultShiftSalaryRules = [
       { dayType: 'WEEKDAY_OFFICE', shiftName: 'Ca Sáng', shiftCoefficient: 1.0 },
       { dayType: 'WEEKDAY_OFFICE', shiftName: 'Ca Chiều', shiftCoefficient: 1.0 },
-      { dayType: 'WEEKDAY_AFTER_HOURS', shiftName: 'Ca Tối', shiftCoefficient: 1.2 },
+      { dayType: 'WEEKDAY_OFFICE', shiftName: 'Ca Tối', shiftCoefficient: 1.0 },
       { dayType: 'SATURDAY', shiftName: 'Ca Sáng', shiftCoefficient: 1.3 },
       { dayType: 'SATURDAY', shiftName: 'Ca Chiều', shiftCoefficient: 1.3 },
       { dayType: 'SATURDAY', shiftName: 'Ca Tối', shiftCoefficient: 1.5 },

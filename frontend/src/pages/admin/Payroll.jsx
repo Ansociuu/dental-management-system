@@ -16,6 +16,7 @@ import {
   generateSalaryPayslip,
   getSalaryBaseRate,
   getSalaryComplexities,
+  getSalaryDegreeCoefficients,
   getSalaryDoctorProfiles,
   getSalaryDoctorYearlyReport,
   getSalaryMonthlyReport,
@@ -23,10 +24,11 @@ import {
   getSalaryYearlyReport,
   updateSalaryBaseRate,
   updateSalaryComplexities,
-  updateSalaryDoctorProfile,
+  updateSalaryDegreeCoefficient,
   updateSalaryShiftRules
 } from '../../services/salaryService';
 import { useNavigate, useParams } from 'react-router-dom';
+import ConfigChangeHistory from '../../components/ConfigChangeHistory';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const currentYear = () => new Date().getFullYear();
@@ -366,19 +368,18 @@ const BaseRateSettings = () => {
 
 const DoctorCoefficientSettings = () => {
   const [rows, setRows] = useState([]);
-  const [degreeLevels, setDegreeLevels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState('');
+  const [savingLevel, setSavingLevel] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await getSalaryDoctorProfiles();
+      const res = await getSalaryDegreeCoefficients();
       setRows(res.data || []);
-      setDegreeLevels(res.meta?.degreeLevels || []);
     } catch (err) {
       setError(err.message || 'Không thể tải hệ số bác sĩ');
     } finally {
@@ -390,32 +391,28 @@ const DoctorCoefficientSettings = () => {
     load();
   }, []);
 
-  const defaultCoefficient = (degreeLevel) => (
-    degreeLevels.find((degree) => degree.value === degreeLevel)?.coefficient || 1.2
-  );
-
-  const updateRow = (doctorId, patch) => {
+  const updateRow = (degreeLevel, patch) => {
     setRows((prev) => prev.map((row) => {
-      if (row.doctor._id !== doctorId) return row;
-      return { ...row, profile: { ...row.profile, ...patch } };
+      if (row.degreeLevel !== degreeLevel) return row;
+      return { ...row, ...patch };
     }));
   };
 
   const saveRow = async (row) => {
     try {
-      setSavingId(row.doctor._id);
+      setSavingLevel(row.degreeLevel);
       setError('');
       setSuccess('');
-      await updateSalaryDoctorProfile(row.doctor._id, {
-        degreeLevel: row.profile.degreeLevel,
-        doctorCoefficient: Number(row.profile.doctorCoefficient)
+      await updateSalaryDegreeCoefficient(row.degreeLevel, {
+        coefficient: Number(row.coefficient)
       });
-      setSuccess(`Đã lưu hệ số cho ${formatProfileDoctorName(row)}`);
+      setSuccess(`Đã lưu hệ số cho ${row.degreeLabel}`);
+      setHistoryRefreshKey((prev) => prev + 1);
       await load();
     } catch (err) {
       setError(err.message || 'Không thể lưu hệ số bác sĩ');
     } finally {
-      setSavingId('');
+      setSavingLevel('');
     }
   };
 
@@ -429,46 +426,31 @@ const DoctorCoefficientSettings = () => {
         {loading ? (
           <LoadingState />
         ) : rows.length === 0 ? (
-          <EmptyState icon="person_off" label="Chưa có bác sĩ trong hệ thống" />
+          <EmptyState icon="school" label="Chưa có cấu hình bằng cấp" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-4 font-black min-w-[240px]">Bác sĩ</th>
-                  <th className="px-6 py-4 font-black min-w-[190px]">Bằng cấp</th>
+                  <th className="px-6 py-4 font-black min-w-[220px]">Bằng cấp</th>
                   <th className="px-6 py-4 font-black min-w-[150px]">Hệ số</th>
                   <th className="px-6 py-4 font-black text-right min-w-[130px]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((row) => (
-                  <tr key={row.doctor._id} className="hover:bg-blue-50/30">
+                  <tr key={row.degreeLevel} className="hover:bg-blue-50/30">
                     <td className="px-6 py-4">
-                      <p className="font-black text-slate-900">{formatProfileDoctorName(row)}</p>
-                      <p className="text-xs font-semibold text-slate-500 mt-1">{row.doctor.email || row.doctor.phone || '-'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={row.profile.degreeLevel}
-                        onChange={(event) => updateRow(row.doctor._id, {
-                          degreeLevel: event.target.value,
-                          doctorCoefficient: defaultCoefficient(event.target.value)
-                        })}
-                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-bold bg-white focus:outline-none focus:border-blue-500"
-                      >
-                        {degreeLevels.map((degree) => (
-                          <option key={degree.value} value={degree.value}>{degree.label}</option>
-                        ))}
-                      </select>
+                      <p className="font-black text-slate-900">{row.degreeLabel}</p>
+                      <p className="text-xs font-semibold text-slate-500 mt-1">{getDegreePrefix(row.degreeLevel)} • {row.degreeLevel}</p>
                     </td>
                     <td className="px-6 py-4">
                       <input
                         type="number"
                         min="0"
                         step="0.1"
-                        value={row.profile.doctorCoefficient}
-                        onChange={(event) => updateRow(row.doctor._id, { doctorCoefficient: event.target.value })}
+                        value={row.coefficient}
+                        onChange={(event) => updateRow(row.degreeLevel, { coefficient: event.target.value })}
                         className="w-28 px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-black text-slate-900 focus:outline-none focus:border-blue-500"
                       />
                     </td>
@@ -476,11 +458,11 @@ const DoctorCoefficientSettings = () => {
                       <button
                         type="button"
                         onClick={() => saveRow(row)}
-                        disabled={savingId === row.doctor._id}
+                        disabled={savingLevel === row.degreeLevel}
                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-xs font-black"
                       >
                         <span className="material-symbols-outlined text-[16px]">save</span>
-                        {savingId === row.doctor._id ? 'Lưu...' : 'Lưu'}
+                        {savingLevel === row.degreeLevel ? 'Lưu...' : 'Lưu'}
                       </button>
                     </td>
                   </tr>
@@ -490,6 +472,11 @@ const DoctorCoefficientSettings = () => {
           </div>
         )}
       </Panel>
+      <ConfigChangeHistory
+        resourceType="DOCTOR_SALARY_COEFFICIENT"
+        title="Lịch sử thay đổi hệ số bác sĩ"
+        refreshKey={historyRefreshKey}
+      />
     </div>
   );
 };
@@ -500,6 +487,7 @@ const ShiftCoefficientSettings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const load = async () => {
     try {
@@ -542,6 +530,7 @@ const ShiftCoefficientSettings = () => {
       })));
       await updateSalaryShiftRules(rules);
       setSuccess('Đã lưu hệ số ngày/ca');
+      setHistoryRefreshKey((prev) => prev + 1);
       await load();
     } catch (err) {
       setError(err.message || 'Không thể lưu hệ số ca');
@@ -612,6 +601,11 @@ const ShiftCoefficientSettings = () => {
           </div>
         )}
       </Panel>
+      <ConfigChangeHistory
+        resourceType="SHIFT_SALARY_RULE"
+        title="Lịch sử thay đổi hệ số ngày/ca"
+        refreshKey={historyRefreshKey}
+      />
     </div>
   );
 };

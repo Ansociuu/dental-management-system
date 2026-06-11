@@ -6,12 +6,12 @@ require('dotenv').config({ override: true });
 const mongoose = require('mongoose');
 const ShiftSalaryRule = require('../models/ShiftSalaryRule');
 
-const validDayTypes = ['WEEKDAY_OFFICE', 'WEEKDAY_AFTER_HOURS', 'SATURDAY', 'SUNDAY', 'HOLIDAY'];
+const validDayTypes = ['WEEKDAY_OFFICE', 'SATURDAY', 'SUNDAY', 'HOLIDAY'];
 
 const inferDayType = (rule) => {
   if (validDayTypes.includes(rule.dayType)) return rule.dayType;
   if (rule.dayOfWeek === -3) return 'HOLIDAY';
-  if (rule.dayOfWeek === -2) return 'WEEKDAY_AFTER_HOURS';
+  if (rule.dayOfWeek === -2) return 'WEEKDAY_OFFICE';
   if (rule.dayOfWeek === 6) return 'SATURDAY';
   if (rule.dayOfWeek === 0) return 'SUNDAY';
   return 'WEEKDAY_OFFICE';
@@ -19,7 +19,6 @@ const inferDayType = (rule) => {
 
 const dayOfWeekByType = {
   WEEKDAY_OFFICE: -1,
-  WEEKDAY_AFTER_HOURS: -2,
   SATURDAY: 6,
   SUNDAY: 0,
   HOLIDAY: -3

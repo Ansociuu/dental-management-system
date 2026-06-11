@@ -14,6 +14,13 @@ export const updateSalaryDoctorProfile = (doctorId, data) => apiFetch(`/salaries
   body: JSON.stringify(data)
 });
 
+export const getSalaryDegreeCoefficients = () => apiFetch('/salaries/degree-coefficients');
+
+export const updateSalaryDegreeCoefficient = (degreeLevel, data) => apiFetch(`/salaries/degree-coefficients/${degreeLevel}`, {
+  method: 'PUT',
+  body: JSON.stringify(data)
+});
+
 export const getSalaryShiftRules = () => apiFetch('/salaries/shift-rules');
 
 export const updateSalaryShiftRules = (rules) => apiFetch('/salaries/shift-rules', {

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from 'react';
 import {
   bulkUpdateServicePrices,
@@ -66,6 +67,8 @@ const emptyServiceForm = {
   status: 'ACTIVE'
 };
 
+const pageSizeOptions = [8, 10, 20, 50];
+
 const ServiceManagement = () => {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -73,6 +76,8 @@ const ServiceManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [serviceForm, setServiceForm] = useState(emptyServiceForm);
@@ -86,6 +91,20 @@ const ServiceManagement = () => {
   const [success, setSuccess] = useState('');
 
   const visibleServiceIds = useMemo(() => services.map((service) => service._id), [services]);
+  const totalPages = Math.max(1, Math.ceil(services.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = services.length === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safeCurrentPage * pageSize, services.length);
+  const paginatedServices = useMemo(() => (
+    services.slice(pageStart > 0 ? pageStart - 1 : 0, pageEnd)
+  ), [services, pageStart, pageEnd]);
+  const pageNumbers = useMemo(() => {
+    const start = Math.max(1, Math.min(safeCurrentPage - 2, totalPages - 4));
+    const end = Math.min(totalPages, start + 4);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [safeCurrentPage, totalPages]);
+
+  const resetToFirstPage = () => setCurrentPage(1);
 
   const fetchServices = async () => {
     try {
@@ -368,13 +387,19 @@ const ServiceManagement = () => {
                 type="text"
                 placeholder="Tìm theo tên, mô tả hoặc nhóm..."
                 value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  resetToFirstPage();
+                }}
                 className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
             <select
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
+              onChange={(event) => {
+                setCategoryFilter(event.target.value);
+                resetToFirstPage();
+              }}
               className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500"
             >
               <option value="">Tất cả nhóm</option>
@@ -382,7 +407,10 @@ const ServiceManagement = () => {
             </select>
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                resetToFirstPage();
+              }}
               className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500"
             >
               <option value="">Tất cả trạng thái</option>
@@ -449,7 +477,7 @@ const ServiceManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {services.map((service) => (
+                {paginatedServices.map((service) => (
                   <tr key={service._id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <p className="font-extrabold text-slate-900">{service.name}</p>
@@ -494,6 +522,64 @@ const ServiceManagement = () => {
             </table>
           )}
         </div>
+        {!loading && services.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <p className="text-sm font-bold text-slate-500">
+                Hiển thị <span className="text-slate-900">{pageStart}</span>-<span className="text-slate-900">{pageEnd}</span> trong <span className="text-slate-900">{services.length}</span> dịch vụ
+              </p>
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  resetToFirstPage();
+                }}
+                className="w-fit px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500"
+              >
+                {pageSizeOptions.map((option) => (
+                  <option key={option} value={option}>{option} dòng/trang</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage === 1}
+                className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-700 hover:bg-blue-50 flex items-center justify-center"
+                title="Trang trước"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+
+              {pageNumbers.map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-xl text-sm font-black border transition-colors ${
+                    page === safeCurrentPage
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:text-blue-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:text-blue-700 hover:bg-blue-50 flex items-center justify-center"
+                title="Trang sau"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <ConfigChangeHistory resourceType="SERVICE_PRICE" title="Lịch sử thiết lập giá dịch vụ" refreshKey={historyRefreshKey} />

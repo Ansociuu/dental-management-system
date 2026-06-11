@@ -1,5 +1,6 @@
 const Appointment = require('../models/Appointment');
 const AppointmentComplexity = require('../models/AppointmentComplexity');
+const DoctorDegreeCoefficient = require('../models/DoctorDegreeCoefficient');
 const DoctorSalaryProfile = require('../models/DoctorSalaryProfile');
 const DutySchedule = require('../models/DutySchedule');
 const Holiday = require('../models/Holiday');
@@ -16,11 +17,11 @@ const VALID_PAYSLIP_REPORT_STATUSES = ['FINALIZED', 'APPROVED', 'PAID'];
 const PAYSLIP_STATUSES = ['DRAFT', 'FINALIZED', 'APPROVED', 'PAID', 'CANCELLED'];
 
 const DEGREE_LEVELS = [
-  { value: 'UNIVERSITY', label: 'Đại học', coefficient: 1.2 },
+  { value: 'UNIVERSITY', label: 'Đại học', coefficient: 1.3 },
   { value: 'MASTER', label: 'Thạc sĩ', coefficient: 1.5 },
-  { value: 'DOCTORATE', label: 'Tiến sĩ', coefficient: 2.0 },
-  { value: 'ASSOCIATE_PROFESSOR', label: 'Phó giáo sư', coefficient: 2.5 },
-  { value: 'PROFESSOR', label: 'Giáo sư', coefficient: 3.0 }
+  { value: 'DOCTORATE', label: 'Tiến sĩ', coefficient: 1.7 },
+  { value: 'ASSOCIATE_PROFESSOR', label: 'Phó giáo sư', coefficient: 2.0 },
+  { value: 'PROFESSOR', label: 'Giáo sư', coefficient: 2.5 }
 ];
 
 const WEEK_DAYS = [
@@ -34,14 +35,14 @@ const WEEK_DAYS = [
 ];
 
 const SHIFT_DAY_TYPES = [
-  { value: 'WEEKDAY_OFFICE', dayOfWeek: -1, label: 'Ngày thường (trong giờ hành chính)' },
-  { value: 'WEEKDAY_AFTER_HOURS', dayOfWeek: -2, label: 'Ngày thường (ngoài giờ)' },
+  { value: 'WEEKDAY_OFFICE', dayOfWeek: -1, label: 'Ngày thường' },
   { value: 'SATURDAY', dayOfWeek: 6, label: 'Thứ 7' },
   { value: 'SUNDAY', dayOfWeek: 0, label: 'Chủ nhật' },
   { value: 'HOLIDAY', dayOfWeek: -3, label: 'Ngày lễ' }
 ];
 
 const SALARY_SETTING_LOG_FIELDS = ['baseHourlyRate', 'effectiveFrom', 'effectiveTo', 'status', 'note'];
+const DOCTOR_DEGREE_LOG_FIELDS = ['degreeLevel', 'degreeLabel', 'coefficient'];
 const SHIFT_RULE_LOG_FIELDS = ['shiftId', 'dayType', 'dayOfWeek', 'shiftCoefficient', 'status'];
 
 const createHttpError = (message, statusCode = 400) => {
@@ -52,6 +53,10 @@ const createHttpError = (message, statusCode = 400) => {
 
 const getDegreeConfig = (degreeLevel) => (
   DEGREE_LEVELS.find((item) => item.value === degreeLevel) || DEGREE_LEVELS[0]
+);
+
+const isValidDegreeLevel = (degreeLevel) => (
+  DEGREE_LEVELS.some((item) => item.value === degreeLevel)
 );
 
 const normalizeNumber = (value, fallback = 0) => {
@@ -185,12 +190,18 @@ const getShiftHours = (startTime, endTime) => {
 };
 
 const getDayTypeConfig = (dayType) => (
-  SHIFT_DAY_TYPES.find((item) => item.value === dayType) || SHIFT_DAY_TYPES[0]
+  SHIFT_DAY_TYPES.find((item) => item.value === dayType) ||
+  (dayType === 'WEEKDAY_AFTER_HOURS'
+    ? { value: 'WEEKDAY_AFTER_HOURS', dayOfWeek: -2, label: 'Ngày thường (ngoài giờ)' }
+    : SHIFT_DAY_TYPES[0])
 );
 
-const isAfterHoursShift = (shift) => {
-  const name = String(shift?.name || '').toLowerCase();
-  return name.includes('tối') || name.includes('toi') || getClockMinutes(shift?.startTime) >= 17 * 60;
+const getEditableDayTypeConfig = (dayType) => {
+  const dayConfig = SHIFT_DAY_TYPES.find((item) => item.value === dayType);
+  if (!dayConfig) {
+    throw createHttpError('Loại ngày trong ma trận hệ số không hợp lệ.');
+  }
+  return dayConfig;
 };
 
 const isDateInHoliday = (dateInput, holidays = []) => {
@@ -211,7 +222,6 @@ const getShiftRuleTypeForDuty = (duty, shift, holidays = []) => {
   const dayOfWeek = new Date(duty.date).getDay();
   if (dayOfWeek === 0) return 'SUNDAY';
   if (dayOfWeek === 6) return 'SATURDAY';
-  if (isAfterHoursShift(shift)) return 'WEEKDAY_AFTER_HOURS';
   return 'WEEKDAY_OFFICE';
 };
 
@@ -306,46 +316,137 @@ const serializeSalaryRate = (rate) => ({
   updatedAt: rate.updatedAt
 });
 
+const serializeDegreeCoefficient = (coefficientDoc) => ({
+  _id: coefficientDoc?._id,
+  degreeLevel: coefficientDoc?.degreeLevel,
+  degreeLabel: coefficientDoc?.degreeLabel,
+  coefficient: normalizeNumber(coefficientDoc?.coefficient, getDegreeConfig(coefficientDoc?.degreeLevel).coefficient),
+  updatedAt: coefficientDoc?.updatedAt
+});
+
+const ensureDegreeCoefficients = async () => {
+  await Promise.all(DEGREE_LEVELS.map(async (degree) => {
+    let coefficient = await DoctorDegreeCoefficient.findOne({ degreeLevel: degree.value });
+
+    if (!coefficient) {
+      try {
+        return await DoctorDegreeCoefficient.create({
+          degreeLevel: degree.value,
+          degreeLabel: degree.label,
+          coefficient: degree.coefficient
+        });
+      } catch (error) {
+        if (error.code !== 11000) throw error;
+        coefficient = await DoctorDegreeCoefficient.findOne({ degreeLevel: degree.value });
+      }
+    }
+
+    if (coefficient && coefficient.degreeLabel !== degree.label) {
+      coefficient.degreeLabel = degree.label;
+      await coefficient.save();
+    }
+
+    return coefficient;
+  }));
+
+  return DoctorDegreeCoefficient.find().lean();
+};
+
+const getDegreeCoefficientMap = async () => {
+  const coefficients = await ensureDegreeCoefficients();
+  const storedMap = new Map(coefficients.map((item) => [item.degreeLevel, item]));
+
+  return new Map(DEGREE_LEVELS.map((degree) => {
+    const stored = storedMap.get(degree.value);
+    return [degree.value, {
+      _id: stored?._id,
+      degreeLevel: degree.value,
+      degreeLabel: stored?.degreeLabel || degree.label,
+      coefficient: normalizeNumber(stored?.coefficient, degree.coefficient),
+      updatedAt: stored?.updatedAt
+    }];
+  }));
+};
+
 const getDoctorProfileSnapshot = async (doctorId) => {
-  const profile = await DoctorSalaryProfile.findOneAndUpdate(
-    { doctorId },
-    { $setOnInsert: { doctorId } },
-    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
-  );
+  const [profile, degreeCoefficientMap] = await Promise.all([
+    DoctorSalaryProfile.findOneAndUpdate(
+      { doctorId },
+      { $setOnInsert: { doctorId } },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
+    ),
+    getDegreeCoefficientMap()
+  ]);
   const degreeLevel = profile?.degreeLevel || 'UNIVERSITY';
   const degreeConfig = getDegreeConfig(degreeLevel);
+  const degreeCoefficient = degreeCoefficientMap.get(degreeLevel);
 
   return {
     degreeLevel,
-    degreeLabel: degreeConfig.label,
-    doctorCoefficient: normalizeNumber(profile?.doctorCoefficient, degreeConfig.coefficient)
+    degreeLabel: degreeCoefficient?.degreeLabel || degreeConfig.label,
+    doctorCoefficient: normalizeNumber(
+      degreeCoefficient?.coefficient,
+      normalizeNumber(profile?.doctorCoefficient, degreeConfig.coefficient)
+    )
   };
 };
 
 const getDoctorProfilesPayload = async () => {
   const doctors = await User.find({ role: 'DOCTOR' }).sort({ fullName: 1 }).lean();
-  const profiles = await Promise.all(doctors.map((doctor) => (
-    DoctorSalaryProfile.findOneAndUpdate(
-      { doctorId: doctor._id },
-      { $setOnInsert: { doctorId: doctor._id } },
-      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
-    ).lean()
-  )));
+  const [profiles, degreeCoefficientMap] = await Promise.all([
+    Promise.all(doctors.map((doctor) => (
+      DoctorSalaryProfile.findOneAndUpdate(
+        { doctorId: doctor._id },
+        { $setOnInsert: { doctorId: doctor._id } },
+        { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
+      ).lean()
+    ))),
+    getDegreeCoefficientMap()
+  ]);
   const profileMap = new Map(profiles.map((profile) => [profile.doctorId.toString(), profile]));
 
   return doctors.map((doctor) => {
     const profile = profileMap.get(doctor._id.toString());
     const degreeLevel = profile?.degreeLevel || 'UNIVERSITY';
     const degreeConfig = getDegreeConfig(degreeLevel);
+    const degreeCoefficient = degreeCoefficientMap.get(degreeLevel);
 
     return {
       doctor,
       profile: {
         _id: profile?._id,
         degreeLevel,
-        degreeLabel: degreeConfig.label,
-        doctorCoefficient: normalizeNumber(profile?.doctorCoefficient, degreeConfig.coefficient)
+        degreeLabel: degreeCoefficient?.degreeLabel || degreeConfig.label,
+        doctorCoefficient: normalizeNumber(
+          degreeCoefficient?.coefficient,
+          normalizeNumber(profile?.doctorCoefficient, degreeConfig.coefficient)
+        )
       }
+    };
+  });
+};
+
+const getDegreeCoefficientsPayload = async () => {
+  const [doctorRows, degreeCoefficientMap] = await Promise.all([
+    getDoctorProfilesPayload(),
+    getDegreeCoefficientMap()
+  ]);
+
+  return Array.from(degreeCoefficientMap.values()).map((degree) => {
+    const doctors = doctorRows
+      .filter((row) => row.profile.degreeLevel === degree.degreeLevel)
+      .map((row) => ({
+        _id: row.doctor._id,
+        fullName: row.doctor.fullName,
+        email: row.doctor.email,
+        specialization: row.doctor.specialization,
+        degreeLevel: row.profile.degreeLevel
+      }));
+
+    return {
+      ...serializeDegreeCoefficient(degree),
+      doctorCount: doctors.length,
+      doctors
     };
   });
 };
@@ -641,6 +742,61 @@ const getDoctorProfiles = async (req, res, next) => {
   }
 };
 
+const getDegreeCoefficients = async (req, res, next) => {
+  try {
+    const data = await getDegreeCoefficientsPayload();
+    res.json({ success: true, data, meta: { degreeLevels: DEGREE_LEVELS } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateDegreeCoefficient = async (req, res, next) => {
+  try {
+    const degreeLevel = req.params.degreeLevel;
+    if (!isValidDegreeLevel(degreeLevel)) {
+      throw createHttpError('Bằng cấp không hợp lệ.');
+    }
+
+    const degreeConfig = getDegreeConfig(degreeLevel);
+    const coefficient = normalizeNumber(req.body.coefficient ?? req.body.doctorCoefficient, -1);
+    if (coefficient <= 0) {
+      throw createHttpError('Hệ số bác sĩ phải lớn hơn 0.');
+    }
+
+    const current = await DoctorDegreeCoefficient.findOne({ degreeLevel });
+    const before = current ? toPlainObject(current, DOCTOR_DEGREE_LOG_FIELDS) : null;
+    const savedCoefficient = await DoctorDegreeCoefficient.findOneAndUpdate(
+      { degreeLevel },
+      {
+        degreeLevel,
+        degreeLabel: degreeConfig.label,
+        coefficient,
+        updatedBy: req.user._id
+      },
+      { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+
+    await recordConfigChange({
+      resourceType: 'DOCTOR_SALARY_COEFFICIENT',
+      resourceId: savedCoefficient._id,
+      resourceName: degreeConfig.label,
+      action: current ? 'UPDATE' : 'CREATE',
+      before,
+      after: toPlainObject(savedCoefficient, DOCTOR_DEGREE_LOG_FIELDS),
+      user: req.user
+    });
+
+    res.json({
+      success: true,
+      message: 'Cập nhật hệ số bác sĩ theo bằng cấp thành công.',
+      data: serializeDegreeCoefficient(savedCoefficient)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateDoctorProfile = async (req, res, next) => {
   try {
     const doctor = await User.findOne({ _id: req.params.doctorId, role: 'DOCTOR' });
@@ -649,33 +805,34 @@ const updateDoctorProfile = async (req, res, next) => {
     }
 
     const degreeLevel = req.body.degreeLevel || 'UNIVERSITY';
-    const degreeConfig = getDegreeConfig(degreeLevel);
-    const doctorCoefficient = normalizeNumber(req.body.doctorCoefficient, degreeConfig.coefficient);
-
-    if (doctorCoefficient <= 0) {
-      throw createHttpError('Hệ số bác sĩ phải lớn hơn 0.');
+    if (!isValidDegreeLevel(degreeLevel)) {
+      throw createHttpError('Bằng cấp không hợp lệ.');
     }
 
     const profile = await DoctorSalaryProfile.findOneAndUpdate(
       { doctorId: doctor._id },
       {
-        degreeLevel,
-        doctorCoefficient,
-        updatedBy: req.user._id
+        $set: {
+          degreeLevel,
+          updatedBy: req.user._id
+        },
+        $setOnInsert: { doctorId: doctor._id }
       },
-      { returnDocument: 'after', upsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
+    const degreeCoefficientMap = await getDegreeCoefficientMap();
+    const degreeCoefficient = degreeCoefficientMap.get(profile.degreeLevel);
 
     res.json({
       success: true,
-      message: 'Cập nhật hệ số bác sĩ thành công.',
+      message: 'Cập nhật bằng cấp bác sĩ thành công.',
       data: {
         doctor,
         profile: {
           _id: profile._id,
           degreeLevel: profile.degreeLevel,
-          degreeLabel: getDegreeConfig(profile.degreeLevel).label,
-          doctorCoefficient: profile.doctorCoefficient
+          degreeLabel: degreeCoefficient?.degreeLabel || getDegreeConfig(profile.degreeLevel).label,
+          doctorCoefficient: normalizeNumber(degreeCoefficient?.coefficient, getDegreeConfig(profile.degreeLevel).coefficient)
         }
       }
     });
@@ -722,7 +879,7 @@ const updateShiftRules = async (req, res, next) => {
 
     await Promise.all(rules.map(async (rule) => {
       const shiftCoefficient = normalizeNumber(rule.shiftCoefficient, -1);
-      const dayConfig = getDayTypeConfig(rule.dayType);
+      const dayConfig = getEditableDayTypeConfig(rule.dayType);
 
       if (shiftCoefficient < 1) {
         throw createHttpError('Hệ số ca làm việc phải lớn hơn hoặc bằng 1.0.');
@@ -1326,6 +1483,8 @@ module.exports = {
   getBaseRate,
   updateBaseRate,
   getDoctorProfiles,
+  getDegreeCoefficients,
+  updateDegreeCoefficient,
   updateDoctorProfile,
   getShiftRules,
   updateShiftRules,
